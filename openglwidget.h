@@ -18,6 +18,9 @@ protected:
 	virtual void resizeGL(int w, int h) override;
 private:
 	QOpenGLShaderProgram *m_program;
+	unsigned int VAO;
+	unsigned int VBO;
+	unsigned int EBO;
 };
 
 #endif // OPENGLWIDGET_H
