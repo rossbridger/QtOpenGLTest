@@ -3,12 +3,17 @@
 #include <QKeyEvent>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+	: QWidget(parent)
 {
-	OpenGLWidget *widget = new OpenGLWidget(this);
+	widget = new OpenGLWidget(this);
 	widget->setMinimumWidth(1024);
 	widget->setMinimumHeight(768);
-	setCentralWidget(widget);
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+	widget->resize(event->size());
+	event->accept();
+}

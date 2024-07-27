@@ -7,6 +7,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QElapsedTimer>
+#include <QVector3D>
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
 {
@@ -19,6 +20,7 @@ protected:
 	virtual void paintGL() override;
 	virtual void resizeGL(int w, int h) override;
 	virtual void timerEvent(QTimerEvent *event) override;
+	virtual void mouseMoveEvent(QMouseEvent *event) override;
 private:
 	QElapsedTimer timer;
 	QOpenGLShaderProgram *program;
@@ -28,6 +30,9 @@ private:
 	//unsigned int texture;
 	QOpenGLTexture *texture[2];
 	bool is_cooldown;
+	QVector3D cameraPos;
+	QVector3D cameraFront;
+	QVector3D cameraUp;
 };
 
 #endif // OPENGLWIDGET_H

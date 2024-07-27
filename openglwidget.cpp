@@ -129,10 +129,13 @@ void OpenGLWidget::paintGL()
 	QMatrix4x4 model, view, projection;
 	view.setToIdentity();
 	projection.setToIdentity();
-	model.rotate(qRadiansToDegrees(timer.elapsed()/1000.0f), 0.5f, 1.0f, 0.0f);
-	view.translate(0.0f, 0.0f, -3.0f);
+	float elapsed_ms = timer.elapsed()/1000.0f;
+	model.rotate(qRadiansToDegrees(elapsed_ms), 0.5f, 1.0f, 0.0f);
 	projection.perspective(45.0f, 800.0f / 600.0f, 0.1f, 100.0f);
-
+	const float radius = 10.0f;
+	float camX = sin(elapsed_ms) * radius;
+	float camZ = cos(elapsed_ms) * radius;
+	view.lookAt(QVector3D(camX, 0.0, camZ), QVector3D(), QVector3D(0.0, 1.0, 0.0));
 
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -169,4 +172,9 @@ void OpenGLWidget::timerEvent(QTimerEvent *event)
 		is_cooldown = false;
 	}
 	update();
+}
+
+void OpenGLWidget::mouseMoveEvent(QMouseEvent *event)
+{
+
 }
