@@ -29,16 +29,16 @@ void OpenGLWidget::initializeGL()
 
 	float vertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
 		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
 		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
 		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
@@ -49,24 +49,24 @@ void OpenGLWidget::initializeGL()
 		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
 		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
 		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
@@ -102,11 +102,11 @@ void OpenGLWidget::initializeGL()
 	// glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.constBits());
 	// glGenerateMipmap(GL_TEXTURE_2D);
 
-	texture[0] = new QOpenGLTexture(QImage("container.jpg").convertToFormat(QImage::Format_RGB888).mirrored());
+	texture[0] = new QOpenGLTexture(QImage("container.jpg").convertToFormat(QImage::Format_RGB888));
 	texture[0]->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
 	texture[0]->setMagnificationFilter(QOpenGLTexture::Linear);
 
-	texture[1] = new QOpenGLTexture(QImage("awesomeface.png").convertToFormat(QImage::Format_RGB888).mirrored());
+	texture[1] = new QOpenGLTexture(QImage("awesomeface.png").convertToFormat(QImage::Format_RGB888));
 	texture[1]->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
 	texture[1]->setMagnificationFilter(QOpenGLTexture::Linear);
 	glEnable(GL_DEPTH_TEST);
@@ -114,8 +114,19 @@ void OpenGLWidget::initializeGL()
 
 void OpenGLWidget::paintGL()
 {
+	QVector3D cubePositions[] = {
+		QVector3D( 0.0f,  0.0f,  0.0f),
+		QVector3D( 2.0f,  5.0f, -15.0f),
+		QVector3D(-1.5f, -2.2f, -2.5f),
+		QVector3D(-3.8f, -2.0f, -12.3f),
+		QVector3D( 2.4f, -0.4f, -3.5f),
+		QVector3D(-1.7f,  3.0f, -7.5f),
+		QVector3D( 1.3f, -2.0f, -2.5f),
+		QVector3D( 1.5f,  2.0f, -2.5f),
+		QVector3D( 1.5f,  0.2f, -1.5f),
+		QVector3D(-1.3f,  1.0f, -1.5f)
+	};
 	QMatrix4x4 model, view, projection;
-	model.setToIdentity();
 	view.setToIdentity();
 	projection.setToIdentity();
 	model.rotate(qRadiansToDegrees(timer.elapsed()/1000.0f), 0.5f, 1.0f, 0.0f);
@@ -128,7 +139,6 @@ void OpenGLWidget::paintGL()
 	program->bind();
 	program->setUniformValue("texture1", 0);
 	program->setUniformValue("texture2", 1);
-	program->setUniformValue("model", model);
 	program->setUniformValue("view", view);
 	program->setUniformValue("projection", projection);
 
@@ -139,7 +149,14 @@ void OpenGLWidget::paintGL()
 	// glBindTexture(GL_TEXTURE_2D, texture);
 	glBindVertexArray(VAO);
 	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	for(unsigned int i = 0; i < 10; i++) {
+		model.setToIdentity();
+		model.translate(cubePositions[i]);
+		float angle = 20.0f * i;
+		model.rotate(qRadiansToDegrees(angle), 1.0f, 0.3f, 0.5f);
+		program->setUniformValue("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 }
 
 void OpenGLWidget::resizeGL(int w, int h)
