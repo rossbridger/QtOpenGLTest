@@ -5,13 +5,20 @@
 #include "openglwidget.h"
 
 
-OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtraFunctions(context())
+OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtraFunctions(context()),
+	cameraPos(0.0f, 0.0f, 3.0f),
+	cameraFront(0.0f, 0.0f, -1.0f),
+	cameraUp(0.0f, 1.0f, 0.0f),
+	pitch(0.0f),
+	yaw(-90.0f),
+	fov(45.0f)
 {
 	constexpr int fps = 60;
 	program = new QOpenGLShaderProgram(context());
 	timer.start();
 	startTimer(1000/fps);
-	is_cooldown = false;
+	grabKeyboard(); // so that it receives keyboard event
+	grabMouse();
 }
 
 OpenGLWidget::~OpenGLWidget()
@@ -131,11 +138,8 @@ void OpenGLWidget::paintGL()
 	projection.setToIdentity();
 	float elapsed_ms = timer.elapsed()/1000.0f;
 	model.rotate(qRadiansToDegrees(elapsed_ms), 0.5f, 1.0f, 0.0f);
-	projection.perspective(45.0f, 800.0f / 600.0f, 0.1f, 100.0f);
-	const float radius = 10.0f;
-	float camX = sin(elapsed_ms) * radius;
-	float camZ = cos(elapsed_ms) * radius;
-	view.lookAt(QVector3D(camX, 0.0, camZ), QVector3D(), QVector3D(0.0, 1.0, 0.0));
+	projection.perspective(fov, 800.0f / 600.0f, 0.1f, 100.0f);
+	view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -168,13 +172,66 @@ void OpenGLWidget::resizeGL(int w, int h)
 
 void OpenGLWidget::timerEvent(QTimerEvent *event)
 {
-	if(is_cooldown) {
-		is_cooldown = false;
-	}
 	update();
 }
 
 void OpenGLWidget::mouseMoveEvent(QMouseEvent *event)
 {
-
+	float xoffset = event->position().x() - lastX;
+	float yoffset = lastY - event->position().y();
+	const float sensitivity = 0.1f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+	yaw   += xoffset;
+	pitch += yoffset;
+	if(pitch > 89.0f)
+	  pitch =  89.0f;
+	if(pitch < -89.0f)
+	  pitch = -89.0f;
+	QVector3D direction;
+	direction.setX(cos(qDegreesToRadians(yaw)) * cos(qDegreesToRadians(pitch)));
+	direction.setY(sin(qDegreesToRadians(pitch)));
+	direction.setZ(sin(qDegreesToRadians(yaw)) * cos(qDegreesToRadians(pitch)));
+	cameraFront = direction.normalized();
 }
+
+void OpenGLWidget::mousePressEvent(QMouseEvent *event)
+{
+	lastX = event->position().x();
+	lastY = event->position().y();
+	event->accept();
+}
+
+void OpenGLWidget::keyPressEvent(QKeyEvent *event)
+{
+	const float cameraSpeed = 0.05f;
+	switch(event->key()) {
+	case Qt::Key_W:
+		cameraPos += cameraSpeed * cameraFront;
+		break;
+	case Qt::Key_S:
+		cameraPos -= cameraSpeed * cameraFront;
+		break;
+	case Qt::Key_A:
+		cameraPos -= QVector3D::crossProduct(cameraFront, cameraUp).normalized() * cameraSpeed;
+		break;
+	case Qt::Key_D:
+		cameraPos += QVector3D::crossProduct(cameraFront, cameraUp).normalized() * cameraSpeed;
+		break;
+	default:
+		QOpenGLWidget::keyPressEvent(event);
+		return;
+	}
+	event->accept();
+}
+
+void OpenGLWidget::wheelEvent(QWheelEvent *event)
+{
+	float yoffset = event->angleDelta().y() / 8;
+	fov -= (float)yoffset;
+	if (fov < 1.0f)
+		fov = 1.0f;
+	if (fov > 45.0f)
+		fov = 45.0f;
+}
+

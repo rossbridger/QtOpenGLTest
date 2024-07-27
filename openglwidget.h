@@ -21,6 +21,9 @@ protected:
 	virtual void resizeGL(int w, int h) override;
 	virtual void timerEvent(QTimerEvent *event) override;
 	virtual void mouseMoveEvent(QMouseEvent *event) override;
+	virtual void mousePressEvent(QMouseEvent *event) override;
+	virtual void keyPressEvent(QKeyEvent *event) override;
+	virtual void wheelEvent(QWheelEvent *event) override;
 private:
 	QElapsedTimer timer;
 	QOpenGLShaderProgram *program;
@@ -29,10 +32,14 @@ private:
 	unsigned int EBO;
 	//unsigned int texture;
 	QOpenGLTexture *texture[2];
-	bool is_cooldown;
 	QVector3D cameraPos;
 	QVector3D cameraFront;
 	QVector3D cameraUp;
+	float lastX;
+	float lastY;
+	float pitch;
+	float yaw;
+	float fov;
 };
 
 #endif // OPENGLWIDGET_H

@@ -17,3 +17,4 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 	widget->resize(event->size());
 	event->accept();
 }
+
