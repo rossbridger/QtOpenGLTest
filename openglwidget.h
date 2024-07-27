@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QOpenGLExtraFunctions>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
 #include <QElapsedTimer>
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
@@ -24,6 +25,8 @@ private:
 	unsigned int VAO;
 	unsigned int VBO;
 	unsigned int EBO;
+	//unsigned int texture;
+	QOpenGLTexture *texture;
 };
 
 #endif // OPENGLWIDGET_H
