@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "openglwidget.h"
+#include <QKeyEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)

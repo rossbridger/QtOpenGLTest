@@ -21,12 +21,14 @@ protected:
 	virtual void timerEvent(QTimerEvent *event) override;
 private:
 	QElapsedTimer timer;
-	QOpenGLShaderProgram *m_program;
+	QOpenGLShaderProgram *program;
 	unsigned int VAO;
 	unsigned int VBO;
 	unsigned int EBO;
 	//unsigned int texture;
 	QOpenGLTexture *texture[2];
+	QMatrix4x4 trans;
+	bool is_cooldown;
 };
 
 #endif // OPENGLWIDGET_H

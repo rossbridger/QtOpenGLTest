@@ -1,12 +1,17 @@
 #include <QOpenGLShader>
+#include <QKeyEvent>
+#include <QVector4D>
+#include <QMatrix4x4>
 #include "openglwidget.h"
 
 
 OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtraFunctions(context())
 {
-	m_program = new QOpenGLShaderProgram(context());
+	program = new QOpenGLShaderProgram(context());
 	timer.start();
 	startTimer(50);
+	is_cooldown = false;
+	trans.setToIdentity();
 }
 
 OpenGLWidget::~OpenGLWidget()
@@ -18,14 +23,14 @@ OpenGLWidget::~OpenGLWidget()
 void OpenGLWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
-	assert(m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, QString("vertex.vert")));
-	assert(m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, QString("fragment.frag")));
-	m_program->link();
+	assert(program->addShaderFromSourceFile(QOpenGLShader::Vertex, QString("vertex.vert")));
+	assert(program->addShaderFromSourceFile(QOpenGLShader::Fragment, QString("fragment.frag")));
+	program->link();
 
 	float vertices[] = {
 		// positions          // colors           // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+		0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+		0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
 		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
 		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left
 	};
@@ -48,10 +53,8 @@ void OpenGLWidget::initializeGL()
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
 
 	// QImage image = QImage("container.jpg").convertToFormat(QImage::Format_RGB888);
 	// glBindTexture(GL_TEXTURE_2D, texture);
@@ -74,11 +77,15 @@ void OpenGLWidget::initializeGL()
 
 void OpenGLWidget::paintGL()
 {
+	trans.setToIdentity();
+	trans.translate(0.5f, -0.5f, 0.0f);
+	trans.rotate(timer.elapsed()/1000.0f, 0.0f, 0.0f, 1.0f);
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-	m_program->bind();
-	m_program->setUniformValue("texture1", 0);
-	m_program->setUniformValue("texture2", 1);
+	program->bind();
+	program->setUniformValue("texture1", 0);
+	program->setUniformValue("texture2", 1);
+	program->setUniformValue("transform", trans);
 
 	glActiveTexture(GL_TEXTURE0);
 	texture[0]->bind();
@@ -95,5 +102,8 @@ void OpenGLWidget::resizeGL(int w, int h)
 
 void OpenGLWidget::timerEvent(QTimerEvent *event)
 {
+	if(is_cooldown) {
+		is_cooldown = false;
+	}
 	update();
 }
