@@ -11,9 +11,8 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtra
 
 OpenGLWidget::~OpenGLWidget()
 {
-	if(texture) {
-		delete texture;
-	}
+	delete texture[0];
+	delete texture[1];
 }
 
 void OpenGLWidget::initializeGL()
@@ -63,9 +62,14 @@ void OpenGLWidget::initializeGL()
 	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	// glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.constBits());
 	// glGenerateMipmap(GL_TEXTURE_2D);
-	texture = new QOpenGLTexture(QImage("container.jpg").convertToFormat(QImage::Format_RGB888));
-	texture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
-	texture->setMagnificationFilter(QOpenGLTexture::Linear);
+
+	texture[0] = new QOpenGLTexture(QImage("container.jpg").convertToFormat(QImage::Format_RGB888).mirrored());
+	texture[0]->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+	texture[0]->setMagnificationFilter(QOpenGLTexture::Linear);
+
+	texture[1] = new QOpenGLTexture(QImage("awesomeface.png").convertToFormat(QImage::Format_RGB888).mirrored());
+	texture[1]->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+	texture[1]->setMagnificationFilter(QOpenGLTexture::Linear);
 }
 
 void OpenGLWidget::paintGL()
@@ -73,8 +77,13 @@ void OpenGLWidget::paintGL()
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	m_program->bind();
+	m_program->setUniformValue("texture1", 0);
+	m_program->setUniformValue("texture2", 1);
 
-	texture->bind();
+	glActiveTexture(GL_TEXTURE0);
+	texture[0]->bind();
+	glActiveTexture(GL_TEXTURE1);
+	texture[1]->bind();
 	// glBindTexture(GL_TEXTURE_2D, texture);
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

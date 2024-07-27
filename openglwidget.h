@@ -26,7 +26,7 @@ private:
 	unsigned int VBO;
 	unsigned int EBO;
 	//unsigned int texture;
-	QOpenGLTexture *texture;
+	QOpenGLTexture *texture[2];
 };
 
 #endif // OPENGLWIDGET_H
