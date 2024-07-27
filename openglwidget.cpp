@@ -7,11 +7,11 @@
 
 OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtraFunctions(context())
 {
+	constexpr int fps = 60;
 	program = new QOpenGLShaderProgram(context());
 	timer.start();
-	startTimer(50);
+	startTimer(1000/fps);
 	is_cooldown = false;
-	trans.setToIdentity();
 }
 
 OpenGLWidget::~OpenGLWidget()
@@ -77,15 +77,23 @@ void OpenGLWidget::initializeGL()
 
 void OpenGLWidget::paintGL()
 {
-	trans.setToIdentity();
-	trans.translate(0.5f, -0.5f, 0.0f);
-	trans.rotate(timer.elapsed()/1000.0f, 0.0f, 0.0f, 1.0f);
+	QMatrix4x4 model, view, projection;
+	model.setToIdentity();
+	view.setToIdentity();
+	projection.setToIdentity();
+	model.rotate(-55.0f, 1.0f, 0.0f, 0.0f);
+	view.translate(0.0f, 0.0f, -3.0f);
+	projection.perspective(45.0f, 800.0f / 600.0f, 0.1f, 100.0f);
+
+
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	program->bind();
 	program->setUniformValue("texture1", 0);
 	program->setUniformValue("texture2", 1);
-	program->setUniformValue("transform", trans);
+	program->setUniformValue("model", model);
+	program->setUniformValue("view", view);
+	program->setUniformValue("projection", projection);
 
 	glActiveTexture(GL_TEXTURE0);
 	texture[0]->bind();

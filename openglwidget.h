@@ -27,7 +27,6 @@ private:
 	unsigned int EBO;
 	//unsigned int texture;
 	QOpenGLTexture *texture[2];
-	QMatrix4x4 trans;
 	bool is_cooldown;
 };
 
