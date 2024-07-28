@@ -132,7 +132,22 @@ void OpenGLWidget::paintGL()
 	lightingShader->bind();
 	lightingShader->setUniformValue("objectColor", QVector3D(1.0f, 0.5f, 0.31f));
 	lightingShader->setUniformValue("lightColor", QVector3D(1.0f, 1.0f, 1.0f));
+	lightingShader->setUniformValue("material.ambient", 1.0f, 0.5f, 0.31f);
+	lightingShader->setUniformValue("material.diffuse", 1.0f, 0.5f, 0.31f);
+	lightingShader->setUniformValue("material.specular", 0.5f, 0.5f, 0.5f);
+	lightingShader->setUniformValue("material.shininess", 32.0f);
 
+	QVector3D lightColor;
+	float sin_elapsed_ms = sin(timer.elapsed()/1000.0f);
+	lightColor.setX(sin_elapsed_ms * 2.0f);
+	lightColor.setY(sin_elapsed_ms * 0.7f);
+	lightColor.setZ(sin_elapsed_ms * 1.3f);
+	QVector3D diffuseColor = lightColor * 0.5f;
+	QVector3D ambientColor = diffuseColor * 0.2f;
+
+	lightingShader->setUniformValue("light.ambient", ambientColor);
+	lightingShader->setUniformValue("light.diffuse", diffuseColor); // darken diffuse light a bit
+	lightingShader->setUniformValue("light.specular", 1.0f, 1.0f, 1.0f);
 
 	projection.setToIdentity();
 	projection.perspective(Zoom, width()/height(), 0.1f, 100.0f);
