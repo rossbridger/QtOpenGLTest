@@ -172,7 +172,10 @@ void OpenGLWidget::paintGL()
 	lightingShader->setUniformValue("light.ambient", 0.2f, 0.2f, 0.2f);
 	lightingShader->setUniformValue("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	lightingShader->setUniformValue("light.specular", 1.0f, 1.0f, 1.0f);
-	lightingShader->setUniformValue("light.position", lightPos);
+	lightingShader->setUniformValue("light.position", Position);
+	lightingShader->setUniformValue("light.direction", Front);
+	lightingShader->setUniformValue("light.cutOff", cos(qDegreesToRadians(12.5f)));
+	lightingShader->setUniformValue("light.outerCutOff", cos(qDegreesToRadians(17.5f)));
 	lightingShader->setUniformValue("light.constant",  1.0f);
 	lightingShader->setUniformValue("light.linear",    0.09f);
 	lightingShader->setUniformValue("light.quadratic", 0.032f);
