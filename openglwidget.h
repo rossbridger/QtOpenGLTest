@@ -45,6 +45,8 @@ private:
 	float Zoom;
 	void updateCameraVectors();
 	QMatrix4x4 GetViewMatrix();
+	QOpenGLTexture *diffuseMap;
+	QOpenGLTexture *specularMap;
 };
 
 #endif // OPENGLWIDGET_H

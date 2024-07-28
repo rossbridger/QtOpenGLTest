@@ -20,6 +20,8 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtra
 	lightCubeShader = new QOpenGLShaderProgram(context());
 	timer.start();
 	startTimer(1000/fps);
+	diffuseMap = nullptr;
+	specularMap = nullptr;
 
 	Position = QVector3D(0.0f, 0.0f, 3.0f);
 	WorldUp = QVector3D(0.0f, 1.0f, 0.0f);
@@ -34,6 +36,12 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtra
 
 OpenGLWidget::~OpenGLWidget()
 {
+	if(diffuseMap != nullptr) {
+		delete diffuseMap;
+	}
+	if(specularMap != nullptr) {
+		delete specularMap;
+	}
 }
 
 void OpenGLWidget::initializeGL()
@@ -50,48 +58,50 @@ void OpenGLWidget::initializeGL()
 	lightCubeShader->link();
 
 	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		// positions          // normals           // texture coords
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
+
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &VBO);
 
@@ -101,11 +111,14 @@ void OpenGLWidget::initializeGL()
 	glBindVertexArray(cubeVAO);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// position attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
 	glGenVertexArrays(1, &lightCubeVAO);
@@ -114,13 +127,34 @@ void OpenGLWidget::initializeGL()
 	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
 	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
+	diffuseMap = new QOpenGLTexture(QImage("container2.png").convertedTo(QImage::Format_RGB888));
+	diffuseMap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+	diffuseMap->setMagnificationFilter(QOpenGLTexture::Linear);
+
+
+	specularMap = new QOpenGLTexture(QImage("container2_specular.png").convertedTo(QImage::Format_RGB888));
+	specularMap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+	specularMap->setMagnificationFilter(QOpenGLTexture::Linear);
 }
 
 void OpenGLWidget::paintGL()
 {
+	QVector3D cubePositions[] = {
+		QVector3D( 0.0f,  0.0f,  0.0f),
+		QVector3D( 2.0f,  5.0f, -15.0f),
+		QVector3D(-1.5f, -2.2f, -2.5f),
+		QVector3D(-3.8f, -2.0f, -12.3f),
+		QVector3D( 2.4f, -0.4f, -3.5f),
+		QVector3D(-1.7f,  3.0f, -7.5f),
+		QVector3D( 1.3f, -2.0f, -2.5f),
+		QVector3D( 1.5f,  2.0f, -2.5f),
+		QVector3D( 1.5f,  0.2f, -1.5f),
+		QVector3D(-1.3f,  1.0f, -1.5f)
+	};
+
 	QMatrix4x4 model, view, projection;
 	QVector3D lightPos(1.2f, 1.0f, 2.0f);
 	view.setToIdentity();
@@ -130,24 +164,15 @@ void OpenGLWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	lightingShader->bind();
-	lightingShader->setUniformValue("objectColor", QVector3D(1.0f, 0.5f, 0.31f));
-	lightingShader->setUniformValue("lightColor", QVector3D(1.0f, 1.0f, 1.0f));
-	lightingShader->setUniformValue("material.ambient", 1.0f, 0.5f, 0.31f);
-	lightingShader->setUniformValue("material.diffuse", 1.0f, 0.5f, 0.31f);
-	lightingShader->setUniformValue("material.specular", 0.5f, 0.5f, 0.5f);
-	lightingShader->setUniformValue("material.shininess", 32.0f);
+	lightingShader->setUniformValue("material.diffuse", 0);
+	lightingShader->setUniformValue("material.specular", 1);
 
-	QVector3D lightColor;
-	float sin_elapsed_ms = sin(timer.elapsed()/1000.0f);
-	lightColor.setX(sin_elapsed_ms * 2.0f);
-	lightColor.setY(sin_elapsed_ms * 0.7f);
-	lightColor.setZ(sin_elapsed_ms * 1.3f);
-	QVector3D diffuseColor = lightColor * 0.5f;
-	QVector3D ambientColor = diffuseColor * 0.2f;
+	lightingShader->setUniformValue("material.shininess", 64.0f);
 
-	lightingShader->setUniformValue("light.ambient", ambientColor);
-	lightingShader->setUniformValue("light.diffuse", diffuseColor); // darken diffuse light a bit
+	lightingShader->setUniformValue("light.ambient", 0.2f, 0.2f, 0.2f);
+	lightingShader->setUniformValue("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	lightingShader->setUniformValue("light.specular", 1.0f, 1.0f, 1.0f);
+	lightingShader->setUniformValue("light.direction", -0.2f, -1.0f, -0.3f);
 
 	projection.setToIdentity();
 	projection.perspective(Zoom, width()/height(), 0.1f, 100.0f);
@@ -155,15 +180,22 @@ void OpenGLWidget::paintGL()
 
 	lightingShader->setUniformValue("projection", projection);
 	lightingShader->setUniformValue("view", view);
-	lightingShader->setUniformValue("lightPos", lightPos);
 	lightingShader->setUniformValue("viewPos", Position);
 
-	model.setToIdentity();
-	lightingShader->setUniformValue("model", model);
+	diffuseMap->bind(0);
+	specularMap->bind(1);
 
 	// render the cube
 	glBindVertexArray(cubeVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	for(unsigned int i = 0; i < 10; i++)
+	{
+		model.setToIdentity();
+		model.translate(cubePositions[i]);
+		float angle = 20.0f * i;
+		model.rotate(angle, 1.0f, 0.3f, 0.5f);
+		lightingShader->setUniformValue("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 
 	lightCubeShader->bind();
 	lightCubeShader->setUniformValue("projection", projection);
