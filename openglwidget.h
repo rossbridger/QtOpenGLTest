@@ -26,20 +26,25 @@ protected:
 	virtual void wheelEvent(QWheelEvent *event) override;
 private:
 	QElapsedTimer timer;
-	QOpenGLShaderProgram *program;
-	unsigned int VAO;
+	QOpenGLShaderProgram *lightingShader;
+	QOpenGLShaderProgram *lightCubeShader;
 	unsigned int VBO;
-	unsigned int EBO;
-	//unsigned int texture;
-	QOpenGLTexture *texture[2];
-	QVector3D cameraPos;
-	QVector3D cameraFront;
-	QVector3D cameraUp;
+	unsigned int cubeVAO;
+	unsigned int lightCubeVAO;
 	float lastX;
 	float lastY;
-	float pitch;
-	float yaw;
-	float fov;
+	QVector3D Position;
+	QVector3D Front;
+	QVector3D Up;
+	QVector3D Right;
+	QVector3D WorldUp;
+	float Yaw;
+	float Pitch;
+	float MovementSpeed;
+	float MouseSensitivity;
+	float Zoom;
+	void updateCameraVectors();
+	QMatrix4x4 GetViewMatrix();
 };
 
 #endif // OPENGLWIDGET_H

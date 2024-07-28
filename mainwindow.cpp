@@ -1,20 +1,14 @@
 #include "mainwindow.h"
 #include "openglwidget.h"
-#include <QKeyEvent>
 
 MainWindow::MainWindow(QWidget *parent)
-	: QWidget(parent)
+	: QMainWindow(parent)
 {
-	widget = new OpenGLWidget(this);
-	widget->setMinimumWidth(1024);
-	widget->setMinimumHeight(768);
+	OpenGLWidget *widget = new OpenGLWidget(this);
+	setCentralWidget(widget);
+	widget->setMinimumWidth(800);
+	widget->setMinimumHeight(600);
 }
 
 MainWindow::~MainWindow() {}
-
-void MainWindow::resizeEvent(QResizeEvent *event)
-{
-	widget->resize(event->size());
-	event->accept();
-}
 

@@ -1,19 +1,14 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "openglwidget.h"
-#include <QWidget>
+#include <QMainWindow>
 
-class MainWindow : public QWidget
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
     MainWindow(QWidget *parent = nullptr);
 	~MainWindow();
-protected:
-	virtual void resizeEvent(QResizeEvent *event) override;
-private:
-	OpenGLWidget *widget;
 };
 #endif // MAINWINDOW_H

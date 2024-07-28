@@ -23,8 +23,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
 		openglwidget.h openglwidget.cpp
-		vertex.vert
-		fragment.frag
+		colors.vs
+		colors.fs
+		light_cube.vs
+		light_cube.fs
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET OpenGLTerrainTest APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

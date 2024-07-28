@@ -5,165 +5,157 @@
 #include "openglwidget.h"
 
 
+// Default camera values
+const float YAW         = -90.0f;
+const float PITCH       =  0.0f;
+const float SPEED       =  2.5f;
+const float SENSITIVITY =  0.1f;
+const float ZOOM        =  45.0f;
+
 OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtraFunctions(context()),
-	cameraPos(0.0f, 0.0f, 3.0f),
-	cameraFront(0.0f, 0.0f, -1.0f),
-	cameraUp(0.0f, 1.0f, 0.0f),
-	pitch(0.0f),
-	yaw(-90.0f),
-	fov(45.0f)
+	Front(0.0f, 0.0f, -1.0f), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
 {
 	constexpr int fps = 60;
-	program = new QOpenGLShaderProgram(context());
+	lightingShader = new QOpenGLShaderProgram(context());
+	lightCubeShader = new QOpenGLShaderProgram(context());
 	timer.start();
 	startTimer(1000/fps);
+
+	Position = QVector3D(0.0f, 0.0f, 3.0f);
+	WorldUp = QVector3D(0.0f, 1.0f, 0.0f);
+	Yaw = YAW;
+	Pitch = PITCH;
+	lastX = width()/2.0f;
+	lastY = height()/2.0f;
+	updateCameraVectors();
 	grabKeyboard(); // so that it receives keyboard event
 	grabMouse();
 }
 
 OpenGLWidget::~OpenGLWidget()
 {
-	delete texture[0];
-	delete texture[1];
 }
 
 void OpenGLWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
-	assert(program->addShaderFromSourceFile(QOpenGLShader::Vertex, QString("vertex.vert")));
-	assert(program->addShaderFromSourceFile(QOpenGLShader::Fragment, QString("fragment.frag")));
-	program->link();
+	glEnable(GL_DEPTH_TEST);
+
+	assert(lightingShader->addShaderFromSourceFile(QOpenGLShader::Vertex, QString("colors.vs")));
+	assert(lightingShader->addShaderFromSourceFile(QOpenGLShader::Fragment, QString("colors.fs")));
+
+	assert(lightCubeShader->addShaderFromSourceFile(QOpenGLShader::Vertex, QString("light_cube.vs")));
+	assert(lightCubeShader->addShaderFromSourceFile(QOpenGLShader::Fragment, QString("light_cube.fs")));
+	lightingShader->link();
+	lightCubeShader->link();
 
 	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
 
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
 
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
 
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f, -0.5f,
 
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+		-0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f
 	};
-	// unsigned int indices[] = {
-	// 	0, 1, 3, // first triangle
-	// 	1, 2, 3  // second triangle
-	// };
-	glGenVertexArrays(1, &VAO);
+	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &VBO);
-	// glGenBuffers(1, &EBO);
-	// glGenTextures(1, &texture);
-
-	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	// glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glBindVertexArray(cubeVAO);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
 
-	// QImage image = QImage("container.jpg").convertToFormat(QImage::Format_RGB888);
-	// glBindTexture(GL_TEXTURE_2D, texture);
-	// // set the texture wrapping/filtering options (on the currently bound texture object)
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.constBits());
-	// glGenerateMipmap(GL_TEXTURE_2D);
+	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+	glGenVertexArrays(1, &lightCubeVAO);
+	glBindVertexArray(lightCubeVAO);
 
-	texture[0] = new QOpenGLTexture(QImage("container.jpg").convertToFormat(QImage::Format_RGB888));
-	texture[0]->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
-	texture[0]->setMagnificationFilter(QOpenGLTexture::Linear);
+	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	texture[1] = new QOpenGLTexture(QImage("awesomeface.png").convertToFormat(QImage::Format_RGB888));
-	texture[1]->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
-	texture[1]->setMagnificationFilter(QOpenGLTexture::Linear);
-	glEnable(GL_DEPTH_TEST);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
 }
 
 void OpenGLWidget::paintGL()
 {
-	QVector3D cubePositions[] = {
-		QVector3D( 0.0f,  0.0f,  0.0f),
-		QVector3D( 2.0f,  5.0f, -15.0f),
-		QVector3D(-1.5f, -2.2f, -2.5f),
-		QVector3D(-3.8f, -2.0f, -12.3f),
-		QVector3D( 2.4f, -0.4f, -3.5f),
-		QVector3D(-1.7f,  3.0f, -7.5f),
-		QVector3D( 1.3f, -2.0f, -2.5f),
-		QVector3D( 1.5f,  2.0f, -2.5f),
-		QVector3D( 1.5f,  0.2f, -1.5f),
-		QVector3D(-1.3f,  1.0f, -1.5f)
-	};
 	QMatrix4x4 model, view, projection;
+	QVector3D lightPos(1.2f, 1.0f, 2.0f);
 	view.setToIdentity();
 	projection.setToIdentity();
-	float elapsed_ms = timer.elapsed()/1000.0f;
-	model.rotate(qRadiansToDegrees(elapsed_ms), 0.5f, 1.0f, 0.0f);
-	projection.perspective(fov, 800.0f / 600.0f, 0.1f, 100.0f);
-	view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	program->bind();
-	program->setUniformValue("texture1", 0);
-	program->setUniformValue("texture2", 1);
-	program->setUniformValue("view", view);
-	program->setUniformValue("projection", projection);
 
-	glActiveTexture(GL_TEXTURE0);
-	texture[0]->bind();
-	glActiveTexture(GL_TEXTURE1);
-	texture[1]->bind();
-	// glBindTexture(GL_TEXTURE_2D, texture);
-	glBindVertexArray(VAO);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	for(unsigned int i = 0; i < 10; i++) {
-		model.setToIdentity();
-		model.translate(cubePositions[i]);
-		float angle = 20.0f * i;
-		model.rotate(qRadiansToDegrees(angle), 1.0f, 0.3f, 0.5f);
-		program->setUniformValue("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
+	lightingShader->bind();
+	lightingShader->setUniformValue("objectColor", QVector3D(1.0f, 0.5f, 0.31f));
+	lightingShader->setUniformValue("lightColor", QVector3D(1.0f, 1.0f, 1.0f));
+
+
+	projection.setToIdentity();
+	projection.perspective(Zoom, width()/height(), 0.1f, 100.0f);
+	view = GetViewMatrix();
+
+	lightingShader->setUniformValue("projection", projection);
+	lightingShader->setUniformValue("view", view);
+
+	model.setToIdentity();
+	lightingShader->setUniformValue("model", model);
+
+	// render the cube
+	glBindVertexArray(cubeVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+
+	lightCubeShader->bind();
+	lightCubeShader->setUniformValue("projection", projection);
+	lightCubeShader->setUniformValue("view", view);
+	model.setToIdentity();
+	model.translate(lightPos);
+	model.scale(0.2f);
+	lightCubeShader->setUniformValue("model", model);
+
+	glBindVertexArray(lightCubeVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	update();
 }
 
 void OpenGLWidget::resizeGL(int w, int h)
@@ -172,51 +164,50 @@ void OpenGLWidget::resizeGL(int w, int h)
 
 void OpenGLWidget::timerEvent(QTimerEvent *event)
 {
-	update();
+	//update();
 }
 
 void OpenGLWidget::mouseMoveEvent(QMouseEvent *event)
 {
 	float xoffset = event->position().x() - lastX;
 	float yoffset = lastY - event->position().y();
-	const float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-	yaw   += xoffset;
-	pitch += yoffset;
-	if(pitch > 89.0f)
-	  pitch =  89.0f;
-	if(pitch < -89.0f)
-	  pitch = -89.0f;
-	QVector3D direction;
-	direction.setX(cos(qDegreesToRadians(yaw)) * cos(qDegreesToRadians(pitch)));
-	direction.setY(sin(qDegreesToRadians(pitch)));
-	direction.setZ(sin(qDegreesToRadians(yaw)) * cos(qDegreesToRadians(pitch)));
-	cameraFront = direction.normalized();
+	lastX = event->position().x();
+	lastY = event->position().y();
+	xoffset *= MouseSensitivity;
+	yoffset *= MouseSensitivity;
+	Yaw   += xoffset;
+	Pitch += yoffset;
+	if(Pitch > 89.0f)
+	  Pitch =  89.0f;
+	if(Pitch < -89.0f)
+	  Pitch = -89.0f;
+	updateCameraVectors();
+	event->accept();
 }
 
 void OpenGLWidget::mousePressEvent(QMouseEvent *event)
 {
 	lastX = event->position().x();
 	lastY = event->position().y();
+
 	event->accept();
 }
 
 void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 {
-	const float cameraSpeed = 0.05f;
+	const float velocity = 0.05f;
 	switch(event->key()) {
 	case Qt::Key_W:
-		cameraPos += cameraSpeed * cameraFront;
+		Position += Front * velocity;
 		break;
 	case Qt::Key_S:
-		cameraPos -= cameraSpeed * cameraFront;
+		Position -= Front * velocity;
 		break;
 	case Qt::Key_A:
-		cameraPos -= QVector3D::crossProduct(cameraFront, cameraUp).normalized() * cameraSpeed;
+		Position -= Right * velocity;
 		break;
 	case Qt::Key_D:
-		cameraPos += QVector3D::crossProduct(cameraFront, cameraUp).normalized() * cameraSpeed;
+		Position += Right * velocity;
 		break;
 	default:
 		QOpenGLWidget::keyPressEvent(event);
@@ -228,10 +219,29 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 void OpenGLWidget::wheelEvent(QWheelEvent *event)
 {
 	float yoffset = event->angleDelta().y() / 8;
-	fov -= (float)yoffset;
-	if (fov < 1.0f)
-		fov = 1.0f;
-	if (fov > 45.0f)
-		fov = 45.0f;
+	Zoom -= (float)yoffset;
+	if (Zoom < 1.0f)
+		Zoom = 1.0f;
+	if (Zoom > 45.0f)
+		Zoom = 45.0f;
+}
+
+void OpenGLWidget::updateCameraVectors()
+{
+	QVector3D front;
+	front.setX(cos(qDegreesToRadians(Yaw)) * cos(qDegreesToRadians(Pitch)));
+	front.setY(sin(qDegreesToRadians(Pitch)));
+	front.setZ(sin(qDegreesToRadians(Yaw)) * cos(qDegreesToRadians(Pitch)));
+	Front = front.normalized();
+	Right = QVector3D::crossProduct(Front, WorldUp).normalized();
+	Up = QVector3D::crossProduct(Right, Front).normalized();
+}
+
+QMatrix4x4 OpenGLWidget::GetViewMatrix()
+{
+	QMatrix4x4 look_at;
+	look_at.setToIdentity();
+	look_at.lookAt(Position, Position + Front, Up);
+	return look_at;
 }
 
