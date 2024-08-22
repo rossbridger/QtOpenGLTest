@@ -36,6 +36,7 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtra
 
 OpenGLWidget::~OpenGLWidget()
 {
+	VBO.destroy();
 	if(diffuseMap != nullptr) {
 		delete diffuseMap;
 	}
@@ -60,16 +61,16 @@ void OpenGLWidget::initializeGL()
 	float vertices[] = {
 		// positions          // normals           // texture coords
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
 		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
 		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
 		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
@@ -80,43 +81,43 @@ void OpenGLWidget::initializeGL()
 		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
 		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
 		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
 		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
 		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
 		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
 
-    VBO = QOpenGLBuffer();
-    VBO.create();
-    VBO.bind();
-    VBO.allocate(vertices, sizeof(vertices));
+	VBO = QOpenGLBuffer();
+	VBO.create();
+	VBO.bind();
+	VBO.allocate(vertices, sizeof(vertices));
 
-    lightingShader->bind();
-    lightingShader->setAttributeBuffer(0, GL_FLOAT, 0, 3, 8 * sizeof(float));
-    lightingShader->enableAttributeArray(0);
-    lightingShader->setAttributeBuffer(1, GL_FLOAT, 3 * sizeof(float), 3, 8 * sizeof(float));
-    lightingShader->enableAttributeArray(1);
-    lightingShader->setAttributeBuffer(2, GL_FLOAT, 6 * sizeof(float), 2, 8 * sizeof(float));
-    lightingShader->enableAttributeArray(2);
-    lightCubeShader->bind();
-    lightCubeShader->setAttributeBuffer(0, GL_FLOAT, 0, 3, 8 * sizeof(float));
-    lightCubeShader->enableAttributeArray(0);
+	lightingShader->bind();
+	lightingShader->setAttributeBuffer(0, GL_FLOAT, 0, 3, 8 * sizeof(float));
+	lightingShader->enableAttributeArray(0);
+	lightingShader->setAttributeBuffer(1, GL_FLOAT, 3 * sizeof(float), 3, 8 * sizeof(float));
+	lightingShader->enableAttributeArray(1);
+	lightingShader->setAttributeBuffer(2, GL_FLOAT, 6 * sizeof(float), 2, 8 * sizeof(float));
+	lightingShader->enableAttributeArray(2);
+	lightCubeShader->bind();
+	lightCubeShader->setAttributeBuffer(0, GL_FLOAT, 0, 3, 8 * sizeof(float));
+	lightCubeShader->enableAttributeArray(0);
 
 	diffuseMap = new QOpenGLTexture(QImage("container2.png").convertedTo(QImage::Format_RGB888));
 	diffuseMap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
@@ -143,30 +144,72 @@ void OpenGLWidget::paintGL()
 		QVector3D(-1.3f,  1.0f, -1.5f)
 	};
 
+	QVector3D pointLightPositions[] = {
+		QVector3D(0.7f,  0.2f,  2.0f),
+		QVector3D(2.3f, -3.3f, -4.0f),
+		QVector3D(-4.0f,  2.0f, -12.0f),
+		QVector3D(0.0f,  0.0f, -3.0f)
+	};
+
 	QMatrix4x4 model, view, projection;
-	QVector3D lightPos(1.2f, 1.0f, 2.0f);
 	view.setToIdentity();
 	projection.setToIdentity();
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    lightingShader->bind();
+	lightingShader->bind();
 	lightingShader->setUniformValue("material.diffuse", 0);
 	lightingShader->setUniformValue("material.specular", 1);
 
-	lightingShader->setUniformValue("material.shininess", 64.0f);
+	lightingShader->setUniformValue("material.shininess", 32.0f);
 
-	lightingShader->setUniformValue("light.ambient", 0.2f, 0.2f, 0.2f);
-	lightingShader->setUniformValue("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
-	lightingShader->setUniformValue("light.specular", 1.0f, 1.0f, 1.0f);
-	lightingShader->setUniformValue("light.position", Position);
-	lightingShader->setUniformValue("light.direction", Front);
-	lightingShader->setUniformValue("light.cutOff", cos(qDegreesToRadians(12.5f)));
-	lightingShader->setUniformValue("light.outerCutOff", cos(qDegreesToRadians(17.5f)));
-	lightingShader->setUniformValue("light.constant",  1.0f);
-	lightingShader->setUniformValue("light.linear",    0.09f);
-	lightingShader->setUniformValue("light.quadratic", 0.032f);
+	lightingShader->setUniformValue("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	lightingShader->setUniformValue("dirLight.ambient", 0.05f, 0.05f, 0.05f); // darken diffuse light a bit
+	lightingShader->setUniformValue("dirLight.specular", 0.5f, 0.5f, 0.5f);
+	// point light 1
+	lightingShader->setUniformValue("pointLights[0].position", pointLightPositions[0]);
+	lightingShader->setUniformValue("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+	lightingShader->setUniformValue("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+	lightingShader->setUniformValue("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+	lightingShader->setUniformValue("pointLights[0].constant", 1.0f);
+	lightingShader->setUniformValue("pointLights[0].linear", 0.09f);
+	lightingShader->setUniformValue("pointLights[0].quadratic", 0.032f);
+	// point light 2
+	lightingShader->setUniformValue("pointLights[1].position", pointLightPositions[1]);
+	lightingShader->setUniformValue("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+	lightingShader->setUniformValue("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+	lightingShader->setUniformValue("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+	lightingShader->setUniformValue("pointLights[1].constant", 1.0f);
+	lightingShader->setUniformValue("pointLights[1].linear", 0.09f);
+	lightingShader->setUniformValue("pointLights[1].quadratic", 0.032f);
+	// point light 3
+	lightingShader->setUniformValue("pointLights[2].position", pointLightPositions[2]);
+	lightingShader->setUniformValue("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+	lightingShader->setUniformValue("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+	lightingShader->setUniformValue("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+	lightingShader->setUniformValue("pointLights[2].constant", 1.0f);
+	lightingShader->setUniformValue("pointLights[2].linear", 0.09f);
+	lightingShader->setUniformValue("pointLights[2].quadratic", 0.032f);
+	// point light 4
+	lightingShader->setUniformValue("pointLights[3].position", pointLightPositions[3]);
+	lightingShader->setUniformValue("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+	lightingShader->setUniformValue("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+	lightingShader->setUniformValue("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+	lightingShader->setUniformValue("pointLights[3].constant", 1.0f);
+	lightingShader->setUniformValue("pointLights[3].linear", 0.09f);
+	lightingShader->setUniformValue("pointLights[3].quadratic", 0.032f);
+	// spotLight
+	lightingShader->setUniformValue("spotLight.position", Position);
+	lightingShader->setUniformValue("spotLight.direction", Front);
+	lightingShader->setUniformValue("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	lightingShader->setUniformValue("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	lightingShader->setUniformValue("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	lightingShader->setUniformValue("spotLight.constant", 1.0f);
+	lightingShader->setUniformValue("spotLight.linear", 0.09f);
+	lightingShader->setUniformValue("spotLight.quadratic", 0.032f);
+	lightingShader->setUniformValue("spotLight.cutOff", cos(qDegreesToRadians(12.5f)));
+	lightingShader->setUniformValue("spotLight.outerCutOff", cos(qDegreesToRadians(15.0f)));
 
 	projection.setToIdentity();
 	projection.perspective(Zoom, width()/height(), 0.1f, 100.0f);
@@ -179,7 +222,7 @@ void OpenGLWidget::paintGL()
 	diffuseMap->bind(0);
 	specularMap->bind(1);
 
-    // render the cube
+	// render the cube
 	for(unsigned int i = 0; i < 10; i++)
 	{
 		model.setToIdentity();
@@ -192,12 +235,15 @@ void OpenGLWidget::paintGL()
 
 	lightCubeShader->bind();
 	lightCubeShader->setUniformValue("projection", projection);
-    lightCubeShader->setUniformValue("view", view);
-	model.setToIdentity();
-	model.translate(lightPos);
-	model.scale(0.2f);
-	lightCubeShader->setUniformValue("model", model);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	lightCubeShader->setUniformValue("view", view);
+	for(unsigned int i = 0; i < 4; i++) {
+		model.setToIdentity();
+		model.translate(pointLightPositions[i]);
+		model.scale(0.2f);
+		lightCubeShader->setUniformValue("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+
 	update();
 }
 
@@ -221,9 +267,9 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent *event)
 	Yaw   += xoffset;
 	Pitch += yoffset;
 	if(Pitch > 89.0f)
-	  Pitch =  89.0f;
+		Pitch =  89.0f;
 	if(Pitch < -89.0f)
-	  Pitch = -89.0f;
+		Pitch = -89.0f;
 	updateCameraVectors();
 	event->accept();
 }
