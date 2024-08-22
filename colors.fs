@@ -2,22 +2,22 @@
 out vec4 FragColor;
 
 struct Material {
-    sampler2D diffuse;
+	sampler2D diffuse;
 	sampler2D specular;
 	float shininess;
 };
 
 struct Light {
-    vec3 position;
+	vec3 position;
 	vec3 direction;
 	float cutOff;
 	float outerCutOff;
 
-    vec3 ambient;
+	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
 
-    float constant;
+	float constant;
 	float linear;
 	float quadratic;
 };

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(OpenGLTerrainTest VERSION 0.1 LANGUAGES CXX)
+project(QtOpenGLTest VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -19,7 +19,7 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(OpenGLTerrainTest
+    qt_add_executable(QtOpenGLTest
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
 		openglwidget.h openglwidget.cpp
@@ -29,26 +29,26 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 		light_cube.fs
     )
 # Define target properties for Android with Qt 6 as:
-#    set_property(TARGET OpenGLTerrainTest APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+#    set_property(TARGET QtOpenGLTest APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
-        add_library(OpenGLTerrainTest SHARED
+        add_library(QtOpenGLTest SHARED
             ${PROJECT_SOURCES}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
-        add_executable(OpenGLTerrainTest
+        add_executable(QtOpenGLTest
             ${PROJECT_SOURCES}
         )
     endif()
 endif()
 
-target_link_libraries(OpenGLTerrainTest PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets Qt${QT_VERSION_MAJOR}::OpenGL)
+target_link_libraries(QtOpenGLTest PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets Qt${QT_VERSION_MAJOR}::OpenGL)
 
-set_target_properties(OpenGLTerrainTest PROPERTIES
+set_target_properties(QtOpenGLTest PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -57,12 +57,12 @@ set_target_properties(OpenGLTerrainTest PROPERTIES
 )
 
 include(GNUInstallDirs)
-install(TARGETS OpenGLTerrainTest
+install(TARGETS QtOpenGLTest
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(OpenGLTerrainTest)
+    qt_finalize_executable(QtOpenGLTest)
 endif()
