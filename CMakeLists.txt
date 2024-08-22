@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(QT_VERSION_MAJOR 6)
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGLWidgets OpenGL)
+# this is heuristically generated, and may not be correct
+find_package(assimp CONFIG REQUIRED)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -46,7 +48,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(QtOpenGLTest PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets Qt${QT_VERSION_MAJOR}::OpenGL)
+target_link_libraries(QtOpenGLTest PRIVATE assimp::assimp Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets Qt${QT_VERSION_MAJOR}::OpenGL)
 
 set_target_properties(QtOpenGLTest PROPERTIES
     ${BUNDLE_ID_OPTION}
