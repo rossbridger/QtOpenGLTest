@@ -102,33 +102,21 @@ void OpenGLWidget::initializeGL()
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
 
-	glGenVertexArrays(1, &cubeVAO);
-	glGenBuffers(1, &VBO);
+    VBO = QOpenGLBuffer();
+    VBO.create();
+    VBO.bind();
+    VBO.allocate(vertices, sizeof(vertices));
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindVertexArray(cubeVAO);
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// position attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
-	glGenVertexArrays(1, &lightCubeVAO);
-	glBindVertexArray(lightCubeVAO);
-
-	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+    lightingShader->bind();
+    lightingShader->setAttributeBuffer(0, GL_FLOAT, 0, 3, 8 * sizeof(float));
+    lightingShader->enableAttributeArray(0);
+    lightingShader->setAttributeBuffer(1, GL_FLOAT, 3 * sizeof(float), 3, 8 * sizeof(float));
+    lightingShader->enableAttributeArray(1);
+    lightingShader->setAttributeBuffer(2, GL_FLOAT, 6 * sizeof(float), 2, 8 * sizeof(float));
+    lightingShader->enableAttributeArray(2);
+    lightCubeShader->bind();
+    lightCubeShader->setAttributeBuffer(0, GL_FLOAT, 0, 3, 8 * sizeof(float));
+    lightCubeShader->enableAttributeArray(0);
 
 	diffuseMap = new QOpenGLTexture(QImage("container2.png").convertedTo(QImage::Format_RGB888));
 	diffuseMap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
@@ -163,7 +151,7 @@ void OpenGLWidget::paintGL()
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	lightingShader->bind();
+    lightingShader->bind();
 	lightingShader->setUniformValue("material.diffuse", 0);
 	lightingShader->setUniformValue("material.specular", 1);
 
@@ -191,8 +179,7 @@ void OpenGLWidget::paintGL()
 	diffuseMap->bind(0);
 	specularMap->bind(1);
 
-	// render the cube
-	glBindVertexArray(cubeVAO);
+    // render the cube
 	for(unsigned int i = 0; i < 10; i++)
 	{
 		model.setToIdentity();
@@ -205,13 +192,11 @@ void OpenGLWidget::paintGL()
 
 	lightCubeShader->bind();
 	lightCubeShader->setUniformValue("projection", projection);
-	lightCubeShader->setUniformValue("view", view);
+    lightCubeShader->setUniformValue("view", view);
 	model.setToIdentity();
 	model.translate(lightPos);
 	model.scale(0.2f);
 	lightCubeShader->setUniformValue("model", model);
-
-	glBindVertexArray(lightCubeVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	update();
 }

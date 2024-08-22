@@ -8,6 +8,7 @@
 #include <QOpenGLTexture>
 #include <QElapsedTimer>
 #include <QVector3D>
+#include <QOpenGLBuffer>
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
 {
@@ -28,9 +29,7 @@ private:
 	QElapsedTimer timer;
 	QOpenGLShaderProgram *lightingShader;
 	QOpenGLShaderProgram *lightCubeShader;
-	unsigned int VBO;
-	unsigned int cubeVAO;
-	unsigned int lightCubeVAO;
+    QOpenGLBuffer VBO;
 	float lastX;
 	float lastY;
 	QVector3D Position;
