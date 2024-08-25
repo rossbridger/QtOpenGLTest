@@ -13,6 +13,7 @@ set(QT_VERSION_MAJOR 6)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGLWidgets OpenGL)
 # this is heuristically generated, and may not be correct
 find_package(assimp CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -25,10 +26,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
 		openglwidget.h openglwidget.cpp
-		colors.vs
-		colors.fs
-		light_cube.vs
-		light_cube.fs
+		mesh.h mesh.cpp
+		model.h model.cpp
+		model.vs
+		model.fs
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET QtOpenGLTest APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -48,6 +49,7 @@ else()
     endif()
 endif()
 
+target_include_directories(QtOpenGLTest PRIVATE ${Stb_INCLUDE_DIR})
 target_link_libraries(QtOpenGLTest PRIVATE assimp::assimp Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets Qt${QT_VERSION_MAJOR}::OpenGL)
 
 set_target_properties(QtOpenGLTest PROPERTIES

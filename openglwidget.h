@@ -9,6 +9,8 @@
 #include <QElapsedTimer>
 #include <QVector3D>
 #include <QOpenGLBuffer>
+#include "mesh.h"
+#include "model.h"
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
 {
@@ -19,17 +21,13 @@ public:
 protected:
 	virtual void initializeGL() override;
 	virtual void paintGL() override;
-	virtual void resizeGL(int w, int h) override;
-	virtual void timerEvent(QTimerEvent *event) override;
 	virtual void mouseMoveEvent(QMouseEvent *event) override;
 	virtual void mousePressEvent(QMouseEvent *event) override;
 	virtual void keyPressEvent(QKeyEvent *event) override;
 	virtual void wheelEvent(QWheelEvent *event) override;
 private:
 	QElapsedTimer timer;
-	QOpenGLShaderProgram *lightingShader;
-	QOpenGLShaderProgram *lightCubeShader;
-    QOpenGLBuffer VBO;
+	QOpenGLShaderProgram *shader;
 	float lastX;
 	float lastY;
 	QVector3D Position;
@@ -42,10 +40,13 @@ private:
 	float MovementSpeed;
 	float MouseSensitivity;
 	float Zoom;
+	Model *model;
 	void updateCameraVectors();
 	QMatrix4x4 GetViewMatrix();
-	QOpenGLTexture *diffuseMap;
-	QOpenGLTexture *specularMap;
+	void setupMesh(Mesh &mesh);
+	void setupModel();
+	void drawMesh(Mesh &mesh);
+	void drawModel();
 };
 
 #endif // OPENGLWIDGET_H
