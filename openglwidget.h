@@ -9,6 +9,7 @@
 #include <QElapsedTimer>
 #include <QVector3D>
 #include <QOpenGLBuffer>
+#include <QOpenGLFramebufferObject>
 #include "mesh.h"
 #include "model.h"
 
@@ -28,6 +29,9 @@ protected:
 private:
 	QElapsedTimer timer;
 	QOpenGLShaderProgram *shader;
+	QOpenGLShaderProgram *screen_shader;
+	QOpenGLBuffer screen_vbo;
+	QOpenGLVertexArrayObject screen_vao;
 	float lastX;
 	float lastY;
 	QVector3D Position;
@@ -41,6 +45,7 @@ private:
 	float MouseSensitivity;
 	float Zoom;
 	Model *model;
+	QOpenGLFramebufferObject *fbo;
 	void updateCameraVectors();
 	QMatrix4x4 GetViewMatrix();
 	void setupMesh(Mesh &mesh);

@@ -2,6 +2,7 @@
 #include <QKeyEvent>
 #include <QVector4D>
 #include <QMatrix4x4>
+#include <QOpenGLFramebufferObjectFormat>
 #include "openglwidget.h"
 #include "model.h"
 
@@ -13,11 +14,28 @@ const float SPEED       =  2.5f;
 const float SENSITIVITY =  0.1f;
 const float ZOOM        =  45.0f;
 
-OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtraFunctions(context()),
-	Front(0.0f, 0.0f, -1.0f), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+const float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    // positions   // texCoords
+    -1.0f,  1.0f,  0.0f, 1.0f,
+    -1.0f, -1.0f,  0.0f, 0.0f,
+     1.0f, -1.0f,  1.0f, 0.0f,
+
+    -1.0f,  1.0f,  0.0f, 1.0f,
+     1.0f, -1.0f,  1.0f, 0.0f,
+     1.0f,  1.0f,  1.0f, 1.0f
+};
+
+OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
+	QOpenGLExtraFunctions(context()),
+	screen_vbo(QOpenGLBuffer::VertexBuffer),
+	Front(0.0f, 0.0f, -1.0f),
+	MovementSpeed(SPEED),
+	MouseSensitivity(SENSITIVITY),
+	Zoom(ZOOM)
 {
 	constexpr int fps = 60;
 	shader = new QOpenGLShaderProgram(context());
+	screen_shader = new QOpenGLShaderProgram(context());
 	timer.start();
 	startTimer(1000/fps);
 
@@ -35,27 +53,53 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent), QOpenGLExtra
 OpenGLWidget::~OpenGLWidget()
 {
 	delete model;
+	delete fbo;
 }
 
 void OpenGLWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
-	glEnable(GL_DEPTH_TEST);
 
-	assert(shader->addShaderFromSourceFile(QOpenGLShader::Vertex, QString("model.vs")));
-	assert(shader->addShaderFromSourceFile(QOpenGLShader::Fragment, QString("model.fs")));
+	QOpenGLFramebufferObjectFormat format;
+	format.setInternalTextureFormat(GL_RGB);
+	format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+	fbo = new QOpenGLFramebufferObject(size(), format);
+	fbo->bind();
+
+	assert(shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "model.vs"));
+	assert(shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "model.fs"));
 	shader->link();
 	model = new Model("backpack/backpack.obj");
 	setupModel();
+	fbo->bindDefault();
+	screen_vao.create();
+	screen_vao.bind();
+	screen_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "screen_texture.vs");
+	screen_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "screen_texture.fs");
+	screen_shader->link();
+	screen_shader->bind();
+	screen_vbo.create();
+	screen_vbo.bind();
+	screen_vbo.allocate(quadVertices, sizeof(quadVertices));
+	screen_shader->setAttributeBuffer(0, GL_FLOAT, 0, 2, sizeof(float) * 4);
+	screen_shader->enableAttributeArray(0);
+	screen_shader->setAttributeBuffer(1, GL_FLOAT, sizeof(float) * 2, 2, sizeof(float) * 4);
+	screen_shader->enableAttributeArray(1);
+	screen_shader->setUniformValue("screenTexture", 0);
+	screen_shader->release();
+	screen_vbo.release();
+	screen_vao.release();
 }
 
 void OpenGLWidget::paintGL()
 {
+	fbo->bind();
 	shader->bind();
 	QMatrix4x4 model, view, projection;
 	view.setToIdentity();
 	projection.setToIdentity();
 
+	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -70,6 +114,18 @@ void OpenGLWidget::paintGL()
 	shader->setUniformValue("model", model);
 
 	drawModel();
+	// second pass
+	GLuint screen_texture = fbo->texture();
+	fbo->bindDefault();
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindTexture(GL_TEXTURE_2D, screen_texture);
+	screen_shader->bind();
+	screen_vao.bind();
+
+	glDisable(GL_DEPTH_TEST);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 	update();
 }
 
@@ -93,14 +149,20 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent *event)
 
 void OpenGLWidget::mousePressEvent(QMouseEvent *event)
 {
-	lastX = event->position().x();
-	lastY = event->position().y();
-
+	if(event->button() & Qt::LeftButton) {
+		lastX = event->position().x();
+		lastY = event->position().y();
+	}
+	if(event->button() & Qt::RightButton) {
+		QImage image = fbo->toImage();
+		image.save("output.png");
+	}
 	event->accept();
 }
 
 void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 {
+	static bool wireframe_mode = false;
 	const float velocity = 0.05f;
 	switch(event->key()) {
 	case Qt::Key_W:
@@ -115,6 +177,13 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_D:
 		Position += Right * velocity;
 		break;
+	case Qt::Key_Space:
+		// if(!wireframe_mode) {
+		// 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		// } else {
+		// 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		// }
+		wireframe_mode = !wireframe_mode;
 	default:
 		QOpenGLWidget::keyPressEvent(event);
 		return;
@@ -195,9 +264,6 @@ void OpenGLWidget::setupModel()
 void OpenGLWidget::drawMesh(Mesh &mesh)
 {
 	unsigned int diffuseNr = 1;
-	unsigned int specularNr = 1;
-	unsigned int normalNr   = 1;
-        unsigned int heightNr   = 1;
 	for(unsigned int i = 0; i < mesh.textures.size(); i++) {
 		QString number;
 		QString name = mesh.textures[i].type;
