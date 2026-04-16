@@ -178,6 +178,7 @@ void OpenGLWidget::paintGL()
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, screen_texture);
+	glEnable(GL_FRAMEBUFFER_SRGB);
 	screen_shader->bind();
 	screen_vao.bind();
 
