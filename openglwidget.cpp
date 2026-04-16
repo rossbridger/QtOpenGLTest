@@ -116,13 +116,8 @@ void OpenGLWidget::paintGL()
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// needs to remove the "translation" part of the skybox view matrix
-	QMatrix4x4 skyboxViewMatrix = viewMatrix;
-	skyboxViewMatrix.setColumn(3, QVector4D(0, 0, 0, 1));
-	skybox->setviewMatrix(skyboxViewMatrix);
-	skybox->setProjectMatrix(projectionMatrix);
-	skybox->onDraw();
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 
 	modelMatrix.setToIdentity();
 	modelMatrix.translate(QVector3D(0.0f, 0.0f, 0.0f));
@@ -132,6 +127,13 @@ void OpenGLWidget::paintGL()
 	model->setviewMatrix(viewMatrix);
 	model->setProjectMatrix(projectionMatrix);
 	model->onDraw();
+
+	// needs to remove the "translation" part of the skybox view matrix
+	QMatrix4x4 skyboxViewMatrix = viewMatrix;
+	skyboxViewMatrix.setColumn(3, QVector4D(0, 0, 0, 1));
+	skybox->setviewMatrix(skyboxViewMatrix);
+	skybox->setProjectMatrix(projectionMatrix);
+	skybox->onDraw();
 
 	// second pass
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
