@@ -28,6 +28,8 @@ void Model::onDraw()
 	shader->bind();
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -248,7 +250,7 @@ QOpenGLTexture *TextureFromFile(const char *path, const QString &directory)
 	qDebug() << "loading texture file:" << filename;
 	QImage data(filename);
 	if(!data.isNull()) {
-		texture = new QOpenGLTexture(data.mirrored());
+		texture = new QOpenGLTexture(data.flipped(Qt::Vertical));
 		texture->bind();
 		texture->setWrapMode(QOpenGLTexture::DirectionS, QOpenGLTexture::Repeat);
 		texture->setWrapMode(QOpenGLTexture::DirectionT, QOpenGLTexture::Repeat);
