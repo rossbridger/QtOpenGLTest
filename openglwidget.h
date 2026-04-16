@@ -10,9 +10,7 @@
 #include <QVector3D>
 #include <QOpenGLBuffer>
 #include <QOpenGLFramebufferObject>
-#include "mesh.h"
 #include "model.h"
-#include "skybox.h"
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
 {
@@ -31,8 +29,11 @@ protected:
 private:
 	QElapsedTimer timer;
 	QOpenGLShaderProgram *screen_shader;
+	QOpenGLShaderProgram *skybox_shader;
 	QOpenGLBuffer screen_vbo;
+	QOpenGLBuffer skybox_vbo;
 	QOpenGLVertexArrayObject screen_vao;
+	QOpenGLVertexArrayObject skybox_vao;
 	float lastX;
 	float lastY;
 	QVector3D Position;
@@ -46,14 +47,18 @@ private:
 	float MouseSensitivity;
 	float Zoom;
 	Model *model;
-	Skybox *skybox;
 	QAtomicInteger<bool> windowResized;
 	GLuint fbo;
 	GLuint screen_texture;
 	GLuint depthstencil_texture;
+	GLuint cubeTexture;
+	QMatrix4x4 modelMatrix, viewMatrix, projectionMatrix;
 	void updateCameraVectors();
 	void resizeFramebufferTextures();
 	QMatrix4x4 GetViewMatrix();
+	void initializeSkybox();
+	void loadCubemap(const std::array<const char*, 6>& faces);
+	void drawSkybox();
 };
 
 #endif // OPENGLWIDGET_H

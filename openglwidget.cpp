@@ -25,6 +25,51 @@ const float quadVertices[] = { // vertex attributes for a quad that fills the en
      1.0f,  1.0f,  1.0f, 1.0f
 };
 
+const float skyboxVertices[] = {
+    // positions
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
+
 OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 	QOpenGLExtraFunctions(context()),
 	screen_vbo(QOpenGLBuffer::VertexBuffer),
@@ -40,6 +85,7 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 
 	Position = QVector3D(0.0f, 0.0f, 3.0f);
 	WorldUp = QVector3D(0.0f, 1.0f, 0.0f);
+
 	Yaw = YAW;
 	Pitch = PITCH;
 	lastX = width()/2.0f;
@@ -47,6 +93,10 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 	updateCameraVectors();
 	grabKeyboard(); // so that it receives keyboard event
 	grabMouse();
+
+	viewMatrix = GetViewMatrix();
+	projectionMatrix.setToIdentity();
+	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
 }
 
 OpenGLWidget::~OpenGLWidget()
@@ -77,7 +127,7 @@ void OpenGLWidget::initializeGL()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthstencil_texture, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	skybox = new Skybox(context());
+	initializeSkybox();
 	model = new Model(context(), "backpack/backpack.obj");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	screen_vao.create();
@@ -107,13 +157,6 @@ void OpenGLWidget::paintGL()
 		windowResized = false;
 	}
 
-	// TODO: no need to set these matrices every frame
-	QMatrix4x4 modelMatrix, viewMatrix, projectionMatrix;
-	viewMatrix.setToIdentity();
-	projectionMatrix.setToIdentity();
-	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
-	viewMatrix = GetViewMatrix();
-
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -128,13 +171,7 @@ void OpenGLWidget::paintGL()
 	model->setProjectMatrix(projectionMatrix);
 	model->onDraw();
 
-	// needs to remove the "translation" part of the skybox view matrix
-	QMatrix4x4 skyboxViewMatrix = viewMatrix;
-	skyboxViewMatrix.setColumn(3, QVector4D(0, 0, 0, 1));
-	skybox->setviewMatrix(skyboxViewMatrix);
-	skybox->setProjectMatrix(projectionMatrix);
-	skybox->onDraw();
-
+	drawSkybox();
 	// second pass
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -165,6 +202,8 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent *event)
 	if(Pitch < -89.0f)
 		Pitch = -89.0f;
 	updateCameraVectors();
+
+	viewMatrix = GetViewMatrix();
 	event->accept();
 }
 
@@ -188,7 +227,6 @@ void OpenGLWidget::mousePressEvent(QMouseEvent *event)
 
 void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 {
-	static bool wireframe_mode = false;
 	const float velocity = 0.05f;
 	switch(event->key()) {
 	case Qt::Key_W:
@@ -203,17 +241,12 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_D:
 		Position += Right * velocity;
 		break;
-	case Qt::Key_Space:
-		// if(!wireframe_mode) {
-		// 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		// } else {
-		// 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		// }
-		wireframe_mode = !wireframe_mode;
 	default:
 		QOpenGLWidget::keyPressEvent(event);
 		return;
 	}
+
+	viewMatrix = GetViewMatrix();
 	event->accept();
 }
 
@@ -225,10 +258,15 @@ void OpenGLWidget::wheelEvent(QWheelEvent *event)
 		Zoom = 1.0f;
 	if (Zoom > 45.0f)
 		Zoom = 45.0f;
+
+	projectionMatrix.setToIdentity();
+	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
 }
 
 void OpenGLWidget::resizeGL(int w, int h)
 {
+	projectionMatrix.setToIdentity();
+	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
 	windowResized = true;
 }
 
@@ -263,4 +301,70 @@ QMatrix4x4 OpenGLWidget::GetViewMatrix()
 	look_at.setToIdentity();
 	look_at.lookAt(Position, Position + Front, Up);
 	return look_at;
+}
+
+void OpenGLWidget::initializeSkybox()
+{
+	skybox_shader = new QOpenGLShaderProgram(context());
+	assert(skybox_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "skybox.vs"));
+	assert(skybox_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "skybox.fs"));
+	skybox_shader->link();
+	const std::array<const char*, 6> faces = {
+		"right.jpg",
+		"left.jpg",
+		"top.jpg",
+		"bottom.jpg",
+		"front.jpg",
+		"back.jpg"
+	};
+	loadCubemap(faces);
+	skybox_shader->bind();
+	skybox_vao.create();
+	skybox_vao.bind();
+	skybox_vbo.create();
+	skybox_vbo.bind();
+	skybox_vbo.allocate(skyboxVertices, sizeof(skyboxVertices));
+	skybox_shader->setAttributeBuffer(0, GL_FLOAT, 0, 3, sizeof(float) * 3);
+	skybox_shader->enableAttributeArray(0);
+	skybox_shader->setUniformValue("skybox", 0);
+	skybox_shader->release();
+	skybox_vbo.release();
+	skybox_vao.release();
+}
+
+void OpenGLWidget::drawSkybox()
+{
+	// needs to remove the "translation" part of the skybox view matrix
+	QMatrix4x4 skyboxViewMatrix = viewMatrix;
+	skyboxViewMatrix.setColumn(3, QVector4D(0, 0, 0, 1));
+
+	glDepthMask(GL_FALSE);
+	skybox_shader->bind();
+	skybox_shader->setUniformValue("projection", projectionMatrix);
+	skybox_shader->setUniformValue("view", skyboxViewMatrix);
+
+	skybox_vao.bind();
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glDepthMask(GL_TRUE);
+}
+
+void OpenGLWidget::loadCubemap(const std::array<const char*, 6>& faces)
+{
+	glGenTextures(1, &cubeTexture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		QString filename = faces[i];
+		QImage image(filename);
+		qDebug() << "image " << i << ": " << image.width() << "x" << image.height() << ", format = " << image.format();
+		image.convertTo(QImage::Format_RGB888);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, image.width(), image.height(),
+			     0, GL_RGB, GL_UNSIGNED_BYTE, image.bits());
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
