@@ -77,6 +77,7 @@ void OpenGLWidget::initializeGL()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthstencil_texture, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	skybox = new Skybox(context());
 	model = new Model(context(), "backpack/backpack.obj");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	screen_vao.create();
@@ -113,6 +114,16 @@ void OpenGLWidget::paintGL()
 	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
 	viewMatrix = GetViewMatrix();
 
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// needs to remove the "translation" part of the skybox view matrix
+	QMatrix4x4 skyboxViewMatrix = viewMatrix;
+	skyboxViewMatrix.setColumn(3, QVector4D(0, 0, 0, 1));
+	skybox->setviewMatrix(skyboxViewMatrix);
+	skybox->setProjectMatrix(projectionMatrix);
+	skybox->onDraw();
+
 	modelMatrix.setToIdentity();
 	modelMatrix.translate(QVector3D(0.0f, 0.0f, 0.0f));
 	modelMatrix.scale(QVector3D(1.0f, 1.0f, 1.0f));
@@ -133,6 +144,7 @@ void OpenGLWidget::paintGL()
 
 	glDisable(GL_DEPTH_TEST);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+
 	update();
 }
 

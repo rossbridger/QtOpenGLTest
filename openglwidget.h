@@ -12,6 +12,7 @@
 #include <QOpenGLFramebufferObject>
 #include "mesh.h"
 #include "model.h"
+#include "skybox.h"
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
 {
@@ -45,6 +46,7 @@ private:
 	float MouseSensitivity;
 	float Zoom;
 	Model *model;
+	Skybox *skybox;
 	QAtomicInteger<bool> windowResized;
 	GLuint fbo;
 	GLuint screen_texture;
