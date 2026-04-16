@@ -19,19 +19,26 @@ set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
+        openglwidget.h
+        openglwidget.cpp
+        mesh.h
+        mesh.cpp
+        model.h
+        model.cpp
 )
+
+set(SHADER_SOURCES
+        model.vs
+        model.fs
+        screen_texture.vs
+        screen_texture.fs
+    )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(QtOpenGLTest
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-		openglwidget.h openglwidget.cpp
-		mesh.h mesh.cpp
-		model.h model.cpp
-		model.vs
-		model.fs
-		screen_texture.vs
-		screen_texture.fs
+        ${SHADER_SOURCES}
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET QtOpenGLTest APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
