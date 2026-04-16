@@ -93,6 +93,17 @@ void OpenGLWidget::initializeGL()
 
 void OpenGLWidget::paintGL()
 {
+	if (fboNeedsRebuild) {
+		fbo->release();
+		delete fbo;
+
+		QOpenGLFramebufferObjectFormat format;
+		format.setInternalTextureFormat(GL_RGB);
+		format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+		fbo = new QOpenGLFramebufferObject(size(), format);
+		fbo->bind();
+		fboNeedsRebuild = false;
+	}
 	fbo->bind();
 	shader->bind();
 	QMatrix4x4 model, view, projection;
@@ -103,7 +114,7 @@ void OpenGLWidget::paintGL()
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	projection.perspective(Zoom, width()/height(), 0.1f, 100.0f);
+	projection.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
 	view = GetViewMatrix();
 	shader->setUniformValue("projection", projection);
 	shader->setUniformValue("view", view);
@@ -199,6 +210,11 @@ void OpenGLWidget::wheelEvent(QWheelEvent *event)
 		Zoom = 1.0f;
 	if (Zoom > 45.0f)
 		Zoom = 45.0f;
+}
+
+void OpenGLWidget::resizeGL(int w, int h)
+{
+	fboNeedsRebuild = true;
 }
 
 void OpenGLWidget::updateCameraVectors()

@@ -22,6 +22,7 @@ public:
 protected:
 	virtual void initializeGL() override;
 	virtual void paintGL() override;
+	virtual void resizeGL(int w, int h) override;
 	virtual void mouseMoveEvent(QMouseEvent *event) override;
 	virtual void mousePressEvent(QMouseEvent *event) override;
 	virtual void keyPressEvent(QKeyEvent *event) override;
@@ -45,6 +46,7 @@ private:
 	float MouseSensitivity;
 	float Zoom;
 	Model *model;
+	QAtomicInteger<bool> fboNeedsRebuild;
 	QOpenGLFramebufferObject *fbo;
 	void updateCameraVectors();
 	QMatrix4x4 GetViewMatrix();
