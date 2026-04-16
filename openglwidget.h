@@ -29,7 +29,6 @@ protected:
 	virtual void wheelEvent(QWheelEvent *event) override;
 private:
 	QElapsedTimer timer;
-	QOpenGLShaderProgram *shader;
 	QOpenGLShaderProgram *screen_shader;
 	QOpenGLBuffer screen_vbo;
 	QOpenGLVertexArrayObject screen_vao;
@@ -50,10 +49,6 @@ private:
 	QOpenGLFramebufferObject *fbo;
 	void updateCameraVectors();
 	QMatrix4x4 GetViewMatrix();
-	void setupMesh(Mesh &mesh);
-	void setupModel();
-	void drawMesh(Mesh &mesh);
-	void drawModel();
 };
 
 #endif // OPENGLWIDGET_H

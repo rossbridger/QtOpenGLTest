@@ -1,13 +1,42 @@
 #include <QOpenGLTexture>
+#include <QOpenGLVertexArrayObject>
 #include <QDir>
 #include "model.h"
 
 static QOpenGLTexture *TextureFromFile(const char *path, const QString &directory);
 
+Model::Model(QOpenGLContext* context, QString path)
+	: RenderObject(context)
+{
+	setShader("model.vs", "model.fs");
+	loadModel(path);
+
+	for(unsigned int i = 0; i < meshes.length(); i++) {
+		setupMesh(meshes[i]);
+	}
+}
+
 Model::~Model()
 {
 	for(Texture &texture: textures_loaded) {
 		delete texture.id;
+	}
+}
+
+void Model::onDraw()
+{
+	shader->bind();
+
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	shader->setUniformValue("model", modelMatrix);
+	shader->setUniformValue("projection", projectionMatrix);
+	shader->setUniformValue("view", viewMatrix);
+
+	for(unsigned int i = 0; i < meshes.length(); i++) {
+		drawMesh(meshes[i]);
 	}
 }
 
@@ -149,6 +178,65 @@ QVector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type
 		}
 	}
 	return textures;
+}
+
+void Model::setupMesh(Mesh& mesh)
+{
+	mesh.VAO = new QOpenGLVertexArrayObject(this);
+	mesh.VAO->create();
+	mesh.VAO->bind();
+	mesh.VBO = QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
+	mesh.VBO.create();
+	mesh.VBO.setUsagePattern(QOpenGLBuffer::StaticDraw);
+	mesh.EBO = QOpenGLBuffer(QOpenGLBuffer::IndexBuffer);
+	mesh.EBO.create();
+	mesh.EBO.setUsagePattern(QOpenGLBuffer::StaticDraw);
+
+	mesh.VBO.bind();
+	mesh.VBO.allocate(mesh.vertices.constData(), (int)(mesh.vertices.size() * sizeof(Vertex)));
+	mesh.EBO.bind();
+	mesh.EBO.allocate(mesh.indices.constData(), (int)(mesh.indices.size() * sizeof(unsigned int)));
+
+	shader->enableAttributeArray(0);
+	shader->setAttributeBuffer(0, GL_FLOAT, 0, 3, sizeof(Vertex));
+	shader->enableAttributeArray(1);
+	shader->setAttributeBuffer(1, GL_FLOAT, offsetof(Vertex, Normal), 3, sizeof(Vertex));
+	shader->enableAttributeArray(2);
+	shader->setAttributeBuffer(2, GL_FLOAT, offsetof(Vertex, TexCoords), 2, sizeof(Vertex));
+	shader->enableAttributeArray(3);
+	shader->setAttributeBuffer(3, GL_FLOAT, offsetof(Vertex, Tangent), 3, sizeof(Vertex));
+	shader->enableAttributeArray(4);
+	shader->setAttributeBuffer(4, GL_FLOAT, offsetof(Vertex, Bitangent), 3, sizeof(Vertex));
+	shader->enableAttributeArray(5);
+	shader->setAttributeBuffer(5, GL_INT, offsetof(Vertex, m_BoneIDs), 3, sizeof(Vertex));
+	shader->enableAttributeArray(6);
+	shader->setAttributeBuffer(6, GL_FLOAT, offsetof(Vertex, m_Weights), 4, sizeof(Vertex));
+	mesh.VAO->release();
+}
+
+void Model::drawMesh(Mesh& mesh)
+{
+	unsigned int diffuseNr = 1;
+	for (unsigned int i = 0; i < mesh.textures.size(); i++) {
+		QString number;
+		QString name = mesh.textures[i].type;
+		if (name == "texture_diffuse") {
+			number = QString::number(diffuseNr++);
+			// } else if(name == "texture_specular") {
+			// 	number = QString::number(specularNr++);
+			// } else if(name == "texture_normal") {
+			// 	number = QString::number(normalNr++);
+			// } else if(name == "texture_height") {
+			// 	number = QString::number(heightNr++);
+		}
+		shader->setUniformValue((name + number).toLocal8Bit().constData(), i);
+		if (mesh.textures[i].id) {
+			mesh.textures[i].id->bind();
+		}
+		}
+		mesh.VAO->bind();
+		glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+		mesh.VAO->release();
 }
 
 QOpenGLTexture *TextureFromFile(const char *path, const QString &directory)

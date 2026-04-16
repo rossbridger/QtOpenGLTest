@@ -34,7 +34,6 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 	Zoom(ZOOM)
 {
 	constexpr int fps = 60;
-	shader = new QOpenGLShaderProgram(context());
 	screen_shader = new QOpenGLShaderProgram(context());
 	timer.start();
 	startTimer(1000/fps);
@@ -53,6 +52,7 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 OpenGLWidget::~OpenGLWidget()
 {
 	delete model;
+	fbo->release();
 	delete fbo;
 }
 
@@ -65,12 +65,7 @@ void OpenGLWidget::initializeGL()
 	format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
 	fbo = new QOpenGLFramebufferObject(size(), format);
 	fbo->bind();
-
-	assert(shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "model.vs"));
-	assert(shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "model.fs"));
-	shader->link();
-	model = new Model("backpack/backpack.obj");
-	setupModel();
+	model = new Model(context(), "backpack/backpack.obj");
 	fbo->bindDefault();
 	screen_vao.create();
 	screen_vao.bind();
@@ -105,26 +100,23 @@ void OpenGLWidget::paintGL()
 		fboNeedsRebuild = false;
 	}
 	fbo->bind();
-	shader->bind();
-	QMatrix4x4 model, view, projection;
-	view.setToIdentity();
-	projection.setToIdentity();
 
-	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// TODO: no need to set these matrices every frame
+	QMatrix4x4 modelMatrix, viewMatrix, projectionMatrix;
+	viewMatrix.setToIdentity();
+	projectionMatrix.setToIdentity();
+	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
+	viewMatrix = GetViewMatrix();
 
-	projection.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
-	view = GetViewMatrix();
-	shader->setUniformValue("projection", projection);
-	shader->setUniformValue("view", view);
+	modelMatrix.setToIdentity();
+	modelMatrix.translate(QVector3D(0.0f, 0.0f, 0.0f));
+	modelMatrix.scale(QVector3D(1.0f, 1.0f, 1.0f));
 
-	model.setToIdentity();
-	model.translate(QVector3D(0.0f, 0.0f, 0.0f));
-	model.scale(QVector3D(1.0f, 1.0f, 1.0f));
-	shader->setUniformValue("model", model);
+	model->setModelMatrix(modelMatrix);
+	model->setviewMatrix(viewMatrix);
+	model->setProjectMatrix(projectionMatrix);
+	model->onDraw();
 
-	drawModel();
 	// second pass
 	GLuint screen_texture = fbo->texture();
 	fbo->bindDefault();
@@ -235,77 +227,3 @@ QMatrix4x4 OpenGLWidget::GetViewMatrix()
 	look_at.lookAt(Position, Position + Front, Up);
 	return look_at;
 }
-
-void OpenGLWidget::setupMesh(Mesh &mesh)
-{
-	mesh.VAO = new QOpenGLVertexArrayObject(this);
-	mesh.VAO->create();
-	mesh.VAO->bind();
-	mesh.VBO = QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
-	mesh.VBO.create();
-	mesh.VBO.setUsagePattern(QOpenGLBuffer::StaticDraw);
-	mesh.EBO = QOpenGLBuffer(QOpenGLBuffer::IndexBuffer);
-	mesh.EBO.create();
-	mesh.EBO.setUsagePattern(QOpenGLBuffer::StaticDraw);
-
-	mesh.VBO.bind();
-	mesh.VBO.allocate(mesh.vertices.constData(), (int)(mesh.vertices.size() * sizeof(Vertex)));
-	mesh.EBO.bind();
-	mesh.EBO.allocate(mesh.indices.constData(), (int)(mesh.indices.size() * sizeof(unsigned int)));
-
-	shader->enableAttributeArray(0);
-	shader->setAttributeBuffer(0, GL_FLOAT, 0, 3, sizeof(Vertex));
-	shader->enableAttributeArray(1);
-	shader->setAttributeBuffer(1, GL_FLOAT, offsetof(Vertex, Normal), 3, sizeof(Vertex));
-	shader->enableAttributeArray(2);
-	shader->setAttributeBuffer(2, GL_FLOAT, offsetof(Vertex, TexCoords), 2, sizeof(Vertex));
-	shader->enableAttributeArray(3);
-	shader->setAttributeBuffer(3, GL_FLOAT, offsetof(Vertex, Tangent), 3, sizeof(Vertex));
-	shader->enableAttributeArray(4);
-	shader->setAttributeBuffer(4, GL_FLOAT, offsetof(Vertex, Bitangent), 3, sizeof(Vertex));
-	shader->enableAttributeArray(5);
-	shader->setAttributeBuffer(5, GL_INT, offsetof(Vertex, m_BoneIDs), 3, sizeof(Vertex));
-	shader->enableAttributeArray(6);
-	shader->setAttributeBuffer(6, GL_FLOAT, offsetof(Vertex, m_Weights), 4, sizeof(Vertex));
-	mesh.VAO->release();
-}
-
-void OpenGLWidget::setupModel()
-{
-	for(unsigned int i = 0; i < model->meshes.length(); i++) {
-		setupMesh(model->meshes[i]);
-	}
-}
-
-void OpenGLWidget::drawMesh(Mesh &mesh)
-{
-	unsigned int diffuseNr = 1;
-	for(unsigned int i = 0; i < mesh.textures.size(); i++) {
-		QString number;
-		QString name = mesh.textures[i].type;
-		if(name == "texture_diffuse") {
-			number = QString::number(diffuseNr++);
-		// } else if(name == "texture_specular") {
-		// 	number = QString::number(specularNr++);
-		// } else if(name == "texture_normal") {
-		// 	number = QString::number(normalNr++);
-		// } else if(name == "texture_height") {
-		// 	number = QString::number(heightNr++);
-		}
-		shader->setUniformValue((name + number).toLocal8Bit().constData(), i);
-		if(mesh.textures[i].id) {
-			mesh.textures[i].id->bind();
-		}
-	}
-	mesh.VAO->bind();
-	glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-	mesh.VAO->release();
-}
-
-void OpenGLWidget::drawModel()
-{
-	for(unsigned int i = 0; i < model->meshes.length(); i++) {
-		drawMesh(model->meshes[i]);
-	}
-}
-
