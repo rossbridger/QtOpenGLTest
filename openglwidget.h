@@ -45,9 +45,12 @@ private:
 	float MouseSensitivity;
 	float Zoom;
 	Model *model;
-	QAtomicInteger<bool> fboNeedsRebuild;
-	QOpenGLFramebufferObject *fbo;
+	QAtomicInteger<bool> windowResized;
+	GLuint fbo;
+	GLuint screen_texture;
+	GLuint depthstencil_texture;
 	void updateCameraVectors();
+	void resizeFramebufferTextures();
 	QMatrix4x4 GetViewMatrix();
 };
 

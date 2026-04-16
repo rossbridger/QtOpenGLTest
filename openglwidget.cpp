@@ -52,21 +52,33 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 OpenGLWidget::~OpenGLWidget()
 {
 	delete model;
-	fbo->release();
-	delete fbo;
+	glDeleteFramebuffers(1, &fbo);
 }
 
 void OpenGLWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
 
-	QOpenGLFramebufferObjectFormat format;
-	format.setInternalTextureFormat(GL_RGB);
-	format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-	fbo = new QOpenGLFramebufferObject(size(), format);
-	fbo->bind();
+	// initialize fbo
+	glGenFramebuffers(1, &fbo);
+	// generate texture
+	glGenTextures(1, &screen_texture);
+	glGenTextures(1, &depthstencil_texture);
+	resizeFramebufferTextures();
+
+	// start binding
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glBindTexture(GL_TEXTURE_2D, screen_texture);
+	// attach it to currently bound framebuffer object
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_texture, 0);
+
+	// now depth texture
+	glBindTexture(GL_TEXTURE_2D, depthstencil_texture);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthstencil_texture, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	model = new Model(context(), "backpack/backpack.obj");
-	fbo->bindDefault();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	screen_vao.create();
 	screen_vao.bind();
 	screen_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "screen_texture.vs");
@@ -88,18 +100,11 @@ void OpenGLWidget::initializeGL()
 
 void OpenGLWidget::paintGL()
 {
-	if (fboNeedsRebuild) {
-		fbo->release();
-		delete fbo;
-
-		QOpenGLFramebufferObjectFormat format;
-		format.setInternalTextureFormat(GL_RGB);
-		format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-		fbo = new QOpenGLFramebufferObject(size(), format);
-		fbo->bind();
-		fboNeedsRebuild = false;
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	if (windowResized) { // recreate image object
+		resizeFramebufferTextures();
+		windowResized = false;
 	}
-	fbo->bind();
 
 	// TODO: no need to set these matrices every frame
 	QMatrix4x4 modelMatrix, viewMatrix, projectionMatrix;
@@ -118,8 +123,7 @@ void OpenGLWidget::paintGL()
 	model->onDraw();
 
 	// second pass
-	GLuint screen_texture = fbo->texture();
-	fbo->bindDefault();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -157,7 +161,12 @@ void OpenGLWidget::mousePressEvent(QMouseEvent *event)
 		lastY = event->position().y();
 	}
 	if(event->button() & Qt::RightButton) {
-		QImage image = fbo->toImage();
+		QImage image(width(), height(), QImage::Format::Format_RGB888);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glBindTexture(GL_TEXTURE_2D, screen_texture);
+		glReadPixels(0, 0, width(), height(), GL_RGB, GL_UNSIGNED_BYTE, image.bits());
+		glBindTexture(GL_TEXTURE_2D, 0);
+		image.flip(); // in order to translate opengl coordinate to QImage
 		image.save("output.png");
 	}
 	event->accept();
@@ -206,7 +215,7 @@ void OpenGLWidget::wheelEvent(QWheelEvent *event)
 
 void OpenGLWidget::resizeGL(int w, int h)
 {
-	fboNeedsRebuild = true;
+	windowResized = true;
 }
 
 void OpenGLWidget::updateCameraVectors()
@@ -218,6 +227,20 @@ void OpenGLWidget::updateCameraVectors()
 	Front = front.normalized();
 	Right = QVector3D::crossProduct(Front, WorldUp).normalized();
 	Up = QVector3D::crossProduct(Right, Front).normalized();
+}
+
+void OpenGLWidget::resizeFramebufferTextures()
+{
+	glBindTexture(GL_TEXTURE_2D, screen_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0,
+		     GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindTexture(GL_TEXTURE_2D, depthstencil_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width(), height(), 0,
+		     GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 QMatrix4x4 OpenGLWidget::GetViewMatrix()
