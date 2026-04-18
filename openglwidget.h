@@ -11,6 +11,7 @@
 #include <QOpenGLBuffer>
 #include <QOpenGLFramebufferObject>
 #include "model.h"
+#include "camera.h"
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
 {
@@ -46,16 +47,17 @@ private:
 	float MovementSpeed;
 	float MouseSensitivity;
 	float Zoom;
+	Camera camera;
 	Model *model;
 	QAtomicInteger<bool> windowResized;
 	GLuint fbo;
+	GLuint depthfbo;
 	GLuint screen_texture;
 	GLuint depthstencil_texture;
 	GLuint cubeTexture;
-	QMatrix4x4 modelMatrix, viewMatrix, projectionMatrix;
+	QMatrix4x4 modelMatrix;
 	void updateCameraVectors();
 	void resizeFramebufferTextures();
-	QMatrix4x4 GetViewMatrix();
 	void initializeSkybox();
 	void initializePostProcessing();
 	void loadCubemap(const std::array<const char*, 6>& faces);

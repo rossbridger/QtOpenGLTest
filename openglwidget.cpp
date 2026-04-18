@@ -91,12 +91,12 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 	lastX = width()/2.0f;
 	lastY = height()/2.0f;
 	updateCameraVectors();
+	camera.setPosition(Position);
+	camera.setFov(Zoom);
+	camera.setAspectRatio(float(width())/height());
+	camera.setNearPlane(0.1f);
+	camera.setFarPlane(100.0f);
 	grabKeyboard(); // so that it receives keyboard event
-	grabMouse();
-
-	viewMatrix = GetViewMatrix();
-	projectionMatrix.setToIdentity();
-	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
 }
 
 OpenGLWidget::~OpenGLWidget()
@@ -150,8 +150,8 @@ void OpenGLWidget::paintGL()
 	modelMatrix.scale(QVector3D(1.0f, 1.0f, 1.0f));
 
 	model->setModelMatrix(modelMatrix);
-	model->setviewMatrix(viewMatrix);
-	model->setProjectMatrix(projectionMatrix);
+	model->setviewMatrix(camera.getViewMatrix());
+	model->setProjectMatrix(camera.getProjectionMatrix());
 	model->onDraw();
 
 	skyboxPass();
@@ -176,8 +176,6 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent *event)
 	if(Pitch < -89.0f)
 		Pitch = -89.0f;
 	updateCameraVectors();
-
-	viewMatrix = GetViewMatrix();
 	event->accept();
 }
 
@@ -202,6 +200,7 @@ void OpenGLWidget::mousePressEvent(QMouseEvent *event)
 void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 {
 	const float velocity = 0.05f;
+
 	switch(event->key()) {
 	case Qt::Key_W:
 		Position += Front * velocity;
@@ -219,8 +218,7 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *event)
 		QOpenGLWidget::keyPressEvent(event);
 		return;
 	}
-
-	viewMatrix = GetViewMatrix();
+	camera.setPosition(Position);
 	event->accept();
 }
 
@@ -233,14 +231,12 @@ void OpenGLWidget::wheelEvent(QWheelEvent *event)
 	if (Zoom > 45.0f)
 		Zoom = 45.0f;
 
-	projectionMatrix.setToIdentity();
-	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
+	camera.setFov(Zoom);
 }
 
 void OpenGLWidget::resizeGL(int w, int h)
 {
-	projectionMatrix.setToIdentity();
-	projectionMatrix.perspective(Zoom, float(width())/height(), 0.1f, 100.0f);
+	camera.setAspectRatio(float(width())/height());
 	windowResized = true;
 }
 
@@ -253,6 +249,7 @@ void OpenGLWidget::updateCameraVectors()
 	Front = front.normalized();
 	Right = QVector3D::crossProduct(Front, WorldUp).normalized();
 	Up = QVector3D::crossProduct(Right, Front).normalized();
+	camera.setOrientation(Front, Right, Up);
 }
 
 void OpenGLWidget::resizeFramebufferTextures()
@@ -267,14 +264,6 @@ void OpenGLWidget::resizeFramebufferTextures()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width(), height(), 0,
 		     GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-QMatrix4x4 OpenGLWidget::GetViewMatrix()
-{
-	QMatrix4x4 look_at;
-	look_at.setToIdentity();
-	look_at.lookAt(Position, Position + Front, Up);
-	return look_at;
 }
 
 void OpenGLWidget::initializeSkybox()
@@ -331,12 +320,12 @@ void OpenGLWidget::initializePostProcessing()
 void OpenGLWidget::skyboxPass()
 {
 	// needs to remove the "translation" part of the skybox view matrix
-	QMatrix4x4 skyboxViewMatrix = viewMatrix;
+	QMatrix4x4 skyboxViewMatrix = camera.getViewMatrix();
 	skyboxViewMatrix.setColumn(3, QVector4D(0, 0, 0, 1));
 
 	glDepthMask(GL_FALSE);
 	skybox_shader->bind();
-	skybox_shader->setUniformValue("projection", projectionMatrix);
+	skybox_shader->setUniformValue("projection", camera.getProjectionMatrix());
 	skybox_shader->setUniformValue("view", skyboxViewMatrix);
 
 	skybox_vao.bind();

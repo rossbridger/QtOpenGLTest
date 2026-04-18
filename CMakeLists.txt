@@ -27,6 +27,8 @@ set(PROJECT_SOURCES
         model.cpp
         renderobject.h
         renderobject.cpp
+        camera.h
+        camera.cpp
 )
 
 set(SHADER_SOURCES
