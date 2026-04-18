@@ -346,6 +346,7 @@ void OpenGLWidget::skyboxPass()
 	skybox_shader->setUniformValue("view", skyboxViewMatrix);
 
 	skybox_vao.bind();
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glDepthMask(GL_TRUE);
@@ -358,6 +359,7 @@ void OpenGLWidget::postProcessingPass()
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, screen_texture);
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	screen_shader->bind();
