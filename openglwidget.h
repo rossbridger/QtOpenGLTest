@@ -57,8 +57,10 @@ private:
 	void resizeFramebufferTextures();
 	QMatrix4x4 GetViewMatrix();
 	void initializeSkybox();
+	void initializePostProcessing();
 	void loadCubemap(const std::array<const char*, 6>& faces);
-	void drawSkybox();
+	void skyboxPass();
+	void postProcessingPass();
 };
 
 #endif // OPENGLWIDGET_H

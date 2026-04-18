@@ -129,24 +129,7 @@ void OpenGLWidget::initializeGL()
 
 	initializeSkybox();
 	model = new Model(context(), "backpack/backpack.obj");
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	screen_vao.create();
-	screen_vao.bind();
-	screen_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "screen_texture.vs");
-	screen_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "screen_texture.fs");
-	screen_shader->link();
-	screen_shader->bind();
-	screen_vbo.create();
-	screen_vbo.bind();
-	screen_vbo.allocate(quadVertices, sizeof(quadVertices));
-	screen_shader->setAttributeBuffer(0, GL_FLOAT, 0, 2, sizeof(float) * 4);
-	screen_shader->enableAttributeArray(0);
-	screen_shader->setAttributeBuffer(1, GL_FLOAT, sizeof(float) * 2, 2, sizeof(float) * 4);
-	screen_shader->enableAttributeArray(1);
-	screen_shader->setUniformValue("screenTexture", 0);
-	screen_shader->release();
-	screen_vbo.release();
-	screen_vao.release();
+	initializePostProcessing();
 }
 
 void OpenGLWidget::paintGL()
@@ -171,19 +154,9 @@ void OpenGLWidget::paintGL()
 	model->setProjectMatrix(projectionMatrix);
 	model->onDraw();
 
-	drawSkybox();
-	// second pass
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	skyboxPass();
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glBindTexture(GL_TEXTURE_2D, screen_texture);
-	glEnable(GL_FRAMEBUFFER_SRGB);
-	screen_shader->bind();
-	screen_vao.bind();
-
-	glDisable(GL_DEPTH_TEST);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	postProcessingPass();
 
 	update();
 }
@@ -333,7 +306,29 @@ void OpenGLWidget::initializeSkybox()
 	skybox_vao.release();
 }
 
-void OpenGLWidget::drawSkybox()
+void OpenGLWidget::initializePostProcessing()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	screen_vao.create();
+	screen_vao.bind();
+	screen_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "screen_texture.vs");
+	screen_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "screen_texture.fs");
+	screen_shader->link();
+	screen_shader->bind();
+	screen_vbo.create();
+	screen_vbo.bind();
+	screen_vbo.allocate(quadVertices, sizeof(quadVertices));
+	screen_shader->setAttributeBuffer(0, GL_FLOAT, 0, 2, sizeof(float) * 4);
+	screen_shader->enableAttributeArray(0);
+	screen_shader->setAttributeBuffer(1, GL_FLOAT, sizeof(float) * 2, 2, sizeof(float) * 4);
+	screen_shader->enableAttributeArray(1);
+	screen_shader->setUniformValue("screenTexture", 0);
+	screen_shader->release();
+	screen_vbo.release();
+	screen_vao.release();
+}
+
+void OpenGLWidget::skyboxPass()
 {
 	// needs to remove the "translation" part of the skybox view matrix
 	QMatrix4x4 skyboxViewMatrix = viewMatrix;
@@ -348,6 +343,21 @@ void OpenGLWidget::drawSkybox()
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glDepthMask(GL_TRUE);
+}
+
+void OpenGLWidget::postProcessingPass()
+{
+	glDisable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindTexture(GL_TEXTURE_2D, screen_texture);
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	screen_shader->bind();
+	screen_vao.bind();
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 void OpenGLWidget::loadCubemap(const std::array<const char*, 6>& faces)
