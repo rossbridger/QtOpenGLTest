@@ -6,9 +6,8 @@
 static QOpenGLTexture *TextureFromFile(const char *path, const QString &directory);
 
 Model::Model(QOpenGLContext* context, QString path)
-	: RenderObject(context)
+	: QObject(context), QOpenGLExtraFunctions(context)
 {
-	setShader("model.vs", "model.fs");
 	loadModel(path);
 
 	for(unsigned int i = 0; i < meshes.length(); i++) {
@@ -23,26 +22,23 @@ Model::~Model()
 	}
 }
 
-void Model::onDraw()
+void Model::draw(QOpenGLShaderProgram* shader)
 {
-	shader->bind();
-
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
 	shader->setUniformValue("model", modelMatrix);
-	shader->setUniformValue("projection", projectionMatrix);
-	shader->setUniformValue("view", viewMatrix);
 
 	for(unsigned int i = 0; i < meshes.length(); i++) {
-		drawMesh(meshes[i]);
+		drawMesh(shader, meshes[i]);
 	}
 }
 
 void Model::loadModel(QString path)
 {
 	Assimp::Importer import;
-	const aiScene *scene = import.ReadFile(path.toLocal8Bit().constData(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+	const aiScene *scene = import.ReadFile(path.toLocal8Bit().constData(),
+					       aiProcess_Triangulate |
+					       aiProcess_GenSmoothNormals |
+					       aiProcess_FlipUVs |
+					       aiProcess_CalcTangentSpace);
 
 	if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		qDebug() << "ERROR::ASSIMP::" << import.GetErrorString();
@@ -195,25 +191,28 @@ void Model::setupMesh(Mesh& mesh)
 	mesh.VBO.allocate(mesh.vertices.constData(), (int)(mesh.vertices.size() * sizeof(Vertex)));
 	mesh.EBO.bind();
 	mesh.EBO.allocate(mesh.indices.constData(), (int)(mesh.indices.size() * sizeof(unsigned int)));
+	// vertex positions
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+	// vertex normals
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+	// vertex texture coords
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 
-	shader->enableAttributeArray(0);
-	shader->setAttributeBuffer(0, GL_FLOAT, 0, 3, sizeof(Vertex));
-	shader->enableAttributeArray(1);
-	shader->setAttributeBuffer(1, GL_FLOAT, offsetof(Vertex, Normal), 3, sizeof(Vertex));
-	shader->enableAttributeArray(2);
-	shader->setAttributeBuffer(2, GL_FLOAT, offsetof(Vertex, TexCoords), 2, sizeof(Vertex));
-	shader->enableAttributeArray(3);
-	shader->setAttributeBuffer(3, GL_FLOAT, offsetof(Vertex, Tangent), 3, sizeof(Vertex));
-	shader->enableAttributeArray(4);
-	shader->setAttributeBuffer(4, GL_FLOAT, offsetof(Vertex, Bitangent), 3, sizeof(Vertex));
-	shader->enableAttributeArray(5);
-	shader->setAttributeBuffer(5, GL_INT, offsetof(Vertex, m_BoneIDs), 3, sizeof(Vertex));
-	shader->enableAttributeArray(6);
-	shader->setAttributeBuffer(6, GL_FLOAT, offsetof(Vertex, m_Weights), 4, sizeof(Vertex));
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 3, GL_INT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 	mesh.VAO->release();
 }
 
-void Model::drawMesh(Mesh& mesh)
+void Model::drawMesh(QOpenGLShaderProgram* shader, Mesh& mesh)
 {
 	unsigned int diffuseNr = 1;
 	for (unsigned int i = 0; i < mesh.textures.size(); i++) {
@@ -232,10 +231,10 @@ void Model::drawMesh(Mesh& mesh)
 		if (mesh.textures[i].id) {
 			mesh.textures[i].id->bind();
 		}
-		}
-		mesh.VAO->bind();
-		glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-		mesh.VAO->release();
+	}
+	mesh.VAO->bind();
+	glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+	mesh.VAO->release();
 }
 
 QOpenGLTexture *TextureFromFile(const char *path, const QString &directory)
@@ -259,3 +258,4 @@ QOpenGLTexture *TextureFromFile(const char *path, const QString &directory)
 		return nullptr;
 	}
 }
+

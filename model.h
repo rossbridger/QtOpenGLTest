@@ -6,33 +6,29 @@
 #include <assimp/postprocess.h>
 #include <QString>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLExtraFunctions>
 #include "mesh.h"
-#include "renderobject.h"
-
 class QOpenGLTexture;
 
-class Model: public RenderObject
+class Model: public QObject, public QOpenGLExtraFunctions
 {
 	Q_OBJECT
 public:
 	Model(QOpenGLContext* context, QString path);
 	~Model();
-	void setModelMatrix(QMatrix4x4 modelMatrix) {this->modelMatrix = modelMatrix;}
-	void setviewMatrix(QMatrix4x4 viewMatrix) {this->viewMatrix = viewMatrix;}
-	void setProjectMatrix(QMatrix4x4 projectionMatrix) {this->projectionMatrix = projectionMatrix;}
-	void onDraw() override;
+	void draw(QOpenGLShaderProgram* shader);
 	friend class OpenGLWidget;
 private:
 	QVector<Mesh> meshes;
 	QString directory;
 	QVector<Texture> textures_loaded;
-	QMatrix4x4 modelMatrix, viewMatrix, projectionMatrix;
+	QMatrix4x4 modelMatrix;
 	void loadModel(QString path);
 	void processNode(aiNode *node, const aiScene *scene);
 	Mesh processMesh(aiMesh *mesh, const aiScene *scene);
 	QVector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, QString typeName);
 	void setupMesh(Mesh& mesh);
-	void drawMesh(Mesh& mesh);
+	void drawMesh(QOpenGLShaderProgram* shader, Mesh& mesh);
 };
 
 #endif // MODEL_H

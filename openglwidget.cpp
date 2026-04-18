@@ -79,7 +79,6 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 	Zoom(ZOOM)
 {
 	constexpr int fps = 60;
-	screen_shader = new QOpenGLShaderProgram(context());
 	timer.start();
 	startTimer(1000/fps);
 
@@ -128,7 +127,7 @@ void OpenGLWidget::initializeGL()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	initializeSkybox();
-	model = new Model(context(), "backpack/backpack.obj");
+	initalizeMesh();
 	initializePostProcessing();
 }
 
@@ -149,13 +148,8 @@ void OpenGLWidget::paintGL()
 	modelMatrix.translate(QVector3D(0.0f, 0.0f, 0.0f));
 	modelMatrix.scale(QVector3D(1.0f, 1.0f, 1.0f));
 
-	model->setModelMatrix(modelMatrix);
-	model->setviewMatrix(camera.getViewMatrix());
-	model->setProjectMatrix(camera.getProjectionMatrix());
-	model->onDraw();
-
 	skyboxPass();
-
+	meshPass();
 	postProcessingPass();
 
 	update();
@@ -297,6 +291,7 @@ void OpenGLWidget::initializeSkybox()
 
 void OpenGLWidget::initializePostProcessing()
 {
+	screen_shader = new QOpenGLShaderProgram(context());
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	screen_vao.create();
 	screen_vao.bind();
@@ -315,6 +310,28 @@ void OpenGLWidget::initializePostProcessing()
 	screen_shader->release();
 	screen_vbo.release();
 	screen_vao.release();
+}
+
+void OpenGLWidget::initalizeMesh()
+{
+	mesh_shader = new QOpenGLShaderProgram(context());
+	assert(mesh_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "model.vs"));
+	assert(mesh_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "model.fs"));
+	mesh_shader->link();
+
+	model = new Model(context(), "backpack/backpack.obj");
+}
+
+void OpenGLWidget::meshPass()
+{
+	mesh_shader->bind();
+	mesh_shader->setUniformValue("projection", camera.getProjectionMatrix());
+	mesh_shader->setUniformValue("view", camera.getViewMatrix());
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	model->draw(mesh_shader);
 }
 
 void OpenGLWidget::skyboxPass()

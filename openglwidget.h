@@ -29,6 +29,7 @@ protected:
 	virtual void wheelEvent(QWheelEvent *event) override;
 private:
 	QElapsedTimer timer;
+	QOpenGLShaderProgram *mesh_shader;
 	QOpenGLShaderProgram *screen_shader;
 	QOpenGLShaderProgram *skybox_shader;
 	QOpenGLBuffer screen_vbo;
@@ -60,7 +61,9 @@ private:
 	void resizeFramebufferTextures();
 	void initializeSkybox();
 	void initializePostProcessing();
+	void initalizeMesh();
 	void loadCubemap(const std::array<const char*, 6>& faces);
+	void meshPass();
 	void skyboxPass();
 	void postProcessingPass();
 };

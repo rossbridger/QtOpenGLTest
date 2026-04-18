@@ -25,8 +25,8 @@ set(PROJECT_SOURCES
         mesh.cpp
         model.h
         model.cpp
-        renderobject.h
-        renderobject.cpp
+
+
         camera.h
         camera.cpp
 )
