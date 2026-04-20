@@ -54,9 +54,10 @@ private:
 	GLuint fbo;
 	GLuint depthfbo;
 	GLuint screen_texture;
-	GLuint depthstencil_texture;
+	GLuint depth_texture;
 	GLuint cubeTexture;
-	QMatrix4x4 modelMatrix;
+	float near_plane;
+	float far_plane;
 	void updateCameraVectors();
 	void resizeFramebufferTextures();
 	void initializeSkybox();

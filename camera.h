@@ -7,6 +7,7 @@ class Camera
 {
 public:
 	Camera();
+	QVector3D getPosition() const;
 	void setPosition(QVector3D position);
 	void setOrientation(QVector3D front, QVector3D right, QVector3D up);
 

@@ -5,6 +5,11 @@ Camera::Camera()
 
 }
 
+QVector3D Camera::getPosition() const
+{
+	return this->position;
+}
+
 void Camera::setPosition(QVector3D position)
 {
 	this->position = position;

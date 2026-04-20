@@ -76,7 +76,9 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 	Front(0.0f, 0.0f, -1.0f),
 	MovementSpeed(SPEED),
 	MouseSensitivity(SENSITIVITY),
-	Zoom(ZOOM)
+	Zoom(ZOOM),
+	near_plane(0.1f),
+	far_plane(100.0f)
 {
 	constexpr int fps = 60;
 	timer.start();
@@ -93,8 +95,8 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 	camera.setPosition(Position);
 	camera.setFov(Zoom);
 	camera.setAspectRatio(float(width())/height());
-	camera.setNearPlane(0.1f);
-	camera.setFarPlane(100.0f);
+	camera.setNearPlane(near_plane);
+	camera.setFarPlane(far_plane);
 	grabKeyboard(); // so that it receives keyboard event
 }
 
@@ -112,7 +114,7 @@ void OpenGLWidget::initializeGL()
 	glGenFramebuffers(1, &fbo);
 	// generate texture
 	glGenTextures(1, &screen_texture);
-	glGenTextures(1, &depthstencil_texture);
+	glGenTextures(1, &depth_texture);
 	resizeFramebufferTextures();
 
 	// start binding
@@ -122,8 +124,8 @@ void OpenGLWidget::initializeGL()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_texture, 0);
 
 	// now depth texture
-	glBindTexture(GL_TEXTURE_2D, depthstencil_texture);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthstencil_texture, 0);
+	glBindTexture(GL_TEXTURE_2D, depth_texture);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_texture, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	initializeSkybox();
@@ -144,12 +146,8 @@ void OpenGLWidget::paintGL()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	modelMatrix.setToIdentity();
-	modelMatrix.translate(QVector3D(0.0f, 0.0f, 0.0f));
-	modelMatrix.scale(QVector3D(1.0f, 1.0f, 1.0f));
-
-	skyboxPass();
 	meshPass();
+	skyboxPass();
 	postProcessingPass();
 
 	update();
@@ -254,9 +252,13 @@ void OpenGLWidget::resizeFramebufferTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glBindTexture(GL_TEXTURE_2D, depthstencil_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width(), height(), 0,
-		     GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	glBindTexture(GL_TEXTURE_2D, depth_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width(), height(), 0,
+		     GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -307,6 +309,7 @@ void OpenGLWidget::initializePostProcessing()
 	screen_shader->setAttributeBuffer(1, GL_FLOAT, sizeof(float) * 2, 2, sizeof(float) * 4);
 	screen_shader->enableAttributeArray(1);
 	screen_shader->setUniformValue("screenTexture", 0);
+	screen_shader->setUniformValue("depthTexture", 1);
 	screen_shader->release();
 	screen_vbo.release();
 	screen_vao.release();
@@ -361,9 +364,13 @@ void OpenGLWidget::postProcessingPass()
 	glClear(GL_COLOR_BUFFER_BIT);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, screen_texture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, depth_texture);
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	screen_shader->bind();
 	screen_vao.bind();
+	screen_shader->setUniformValue("near_plane", near_plane);
+	screen_shader->setUniformValue("far_plane", far_plane);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
