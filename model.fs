@@ -2,8 +2,8 @@
 layout(location = 0) out vec4 FragColor;
 
 in vec3 FragPos;
-in vec3 Normal;
 in vec2 TexCoords;
+in mat3 TBN;
 
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
@@ -121,15 +121,23 @@ void CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, out
 
 void main()
 {
+    // normal mapping
+    // obtain normal from normal map in range [0,1]
+        vec3 norm = texture(texture_normal1, TexCoords).rgb;
+        // transform normal vector to range [-1,1]
+        norm = normalize(norm * 2.0 - 1.0);
+        norm = normalize(TBN * norm);
+
     // properties
-    vec3 norm = normalize(Normal);
+    //vec3 norm = normalize(Normal);
+
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 total_ambient, total_diffuse, total_specular;
     vec3 diffuseColor = texture(texture_diffuse1, TexCoords).rgb;
     vec3 specularColor = texture(texture_specular1, TexCoords).rgb;
 
     // phase 1: Directional lighting
-    //CalcDirLight(dirLight, norm, viewDir, total_ambient, total_diffuse, total_specular);
+    CalcDirLight(dirLight, norm, viewDir, total_ambient, total_diffuse, total_specular);
     // phase 2: Point lights
     for(int i = 0; i < NR_POINT_LIGHTS; i++) {
         vec3 ambient, diffuse, specular;

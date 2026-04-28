@@ -208,7 +208,7 @@ void Model::setupMesh(Mesh& mesh)
 	glEnableVertexAttribArray(5);
 	glVertexAttribPointer(5, 3, GL_INT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
 	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
 	mesh.VAO->release();
 }
 
