@@ -54,11 +54,11 @@ uniform vec3 viewPos;
 void CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, out vec3 ambient, out vec3 diffuse, out vec3 specular)
 {
     vec3 lightDir = normalize(-light.direction);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
     // combine results
     ambient  = light.ambient;
     diffuse  = light.diffuse  * diff;
@@ -68,11 +68,11 @@ void CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, out vec3 ambient, o
 void CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, out vec3 ambient, out vec3 diffuse, out vec3 specular)
 {
     vec3 lightDir = normalize(light.position - fragPos);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
     // attenuation
     float distance    = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance +
@@ -99,9 +99,9 @@ void CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, out
     {
         // diffuse shading
         float diff = max(dot(normal, lightDir), 0.0);
+        vec3 halfwayDir = normalize(lightDir + viewDir);
         // specular shading
-        vec3 reflectDir = reflect(-lightDir, normal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+        float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
         // attenuation
         float distance    = length(light.position - fragPos);
         float attenuation = 1.0 / (light.constant + light.linear * distance +
