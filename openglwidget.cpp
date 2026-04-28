@@ -5,6 +5,7 @@
 #include <QOpenGLFramebufferObjectFormat>
 #include "openglwidget.h"
 #include "model.h"
+#include "terrain.h"
 
 
 // Default camera values
@@ -325,6 +326,7 @@ void OpenGLWidget::initalizeMesh()
 	mesh_shader->link();
 
 	entities.push_back(new Model(context(), "backpack/backpack.obj"));
+	entities.push_back(new Terrain(context(), "iceland_heightmap.png"));
 }
 
 void OpenGLWidget::meshPass()

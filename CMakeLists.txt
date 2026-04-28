@@ -25,8 +25,10 @@ set(PROJECT_SOURCES
         mesh.cpp
         model.h
         model.cpp
-
-
+        entity.h
+        entity.cpp
+        terrain.h
+        terrain.cpp
         camera.h
         camera.cpp
 )
@@ -45,7 +47,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         ${SHADER_SOURCES}
-        entity.h entity.cpp
 
 
     )
