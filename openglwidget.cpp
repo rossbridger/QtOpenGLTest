@@ -366,6 +366,18 @@ void OpenGLWidget::meshPass()
 		mesh_shader->setUniformValue(QString("pointLights[%1].specular").arg(i).toUtf8(), QVector3D(1.0f, 1.0f, 1.0f));
 	}
 
+	mesh_shader->setUniformValue("spotLight.position", camera.getPosition());
+	mesh_shader->setUniformValue("spotLight.direction", Front);
+	mesh_shader->setUniformValue("spotLight.cutOff", qCos(qDegreesToRadians(12.5f)));
+	mesh_shader->setUniformValue("spotLight.outerCutOff", qCos(qDegreesToRadians(17.5f)));
+	mesh_shader->setUniformValue("spotLight.constant", 1.0f);
+	mesh_shader->setUniformValue("spotLight.linear", 0.09f);
+	mesh_shader->setUniformValue("spotLight.quadratic", 0.032f);
+	mesh_shader->setUniformValue("spotLight.ambient", QVector3D(0.2f, 0.2f, 0.2f));
+	mesh_shader->setUniformValue("spotLight.diffuse", QVector3D(0.5f, 0.5f, 0.5f));
+	mesh_shader->setUniformValue("spotLight.specular", QVector3D(1.0f, 1.0f, 1.0f));
+
+
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
