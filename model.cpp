@@ -224,12 +224,12 @@ void Model::drawMesh(QOpenGLShaderProgram* shader, Mesh& mesh)
 		QString name = mesh.textures[i].type;
 		if (name == "texture_diffuse") {
 			number = QString::number(diffuseNr++);
-			} else if(name == "texture_specular") {
-				number = QString::number(specularNr++);
-			} else if(name == "texture_normal") {
-				number = QString::number(normalNr++);
-			} else if(name == "texture_height") {
-				number = QString::number(heightNr++);
+		} else if(name == "texture_specular") {
+			number = QString::number(specularNr++);
+		} else if(name == "texture_normal") {
+			number = QString::number(normalNr++);
+		} else if(name == "texture_height") {
+			number = QString::number(heightNr++);
 		}
 		shader->setUniformValue((name + number).toLocal8Bit().constData(), i);
 		if (mesh.textures[i].id) {

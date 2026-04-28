@@ -10,6 +10,7 @@
 #include <QVector3D>
 #include <QOpenGLBuffer>
 #include <QOpenGLFramebufferObject>
+#include <QOpenGLDebugLogger>
 #include "entity.h"
 #include "model.h"
 #include "camera.h"
@@ -20,6 +21,9 @@ class OpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions
 public:
 	OpenGLWidget(QWidget *parent = nullptr);
 	~OpenGLWidget();
+public slots:
+	void setSunAzimuth(float azimuth);
+	void setSunAltitude(float altitude);
 protected:
 	virtual void initializeGL() override;
 	virtual void paintGL() override;
@@ -59,6 +63,8 @@ private:
 	GLuint cubeTexture;
 	float near_plane;
 	float far_plane;
+	float sun_azimuth;
+	float sun_altitude;
 	void updateCameraVectors();
 	void resizeFramebufferTextures();
 	void initializeSkybox();

@@ -109,6 +109,16 @@ OpenGLWidget::~OpenGLWidget()
 	glDeleteFramebuffers(1, &fbo);
 }
 
+void OpenGLWidget::setSunAltitude(float altitude)
+{
+	sun_altitude = altitude;
+}
+
+void OpenGLWidget::setSunAzimuth(float azimuth)
+{
+	sun_azimuth = azimuth;
+}
+
 void OpenGLWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
@@ -334,6 +344,10 @@ void OpenGLWidget::meshPass()
 	mesh_shader->bind();
 	mesh_shader->setUniformValue("projection", camera.getProjectionMatrix());
 	mesh_shader->setUniformValue("view", camera.getViewMatrix());
+	mesh_shader->setUniformValue("viewPos", camera.getPosition());
+	mesh_shader->setUniformValue("light.ambient",  QVector3D(0.2f, 0.2f, 0.2f));
+	mesh_shader->setUniformValue("light.diffuse",  QVector3D(0.5f, 0.5f, 0.5f)); // darken diffuse light a bit
+	mesh_shader->setUniformValue("light.specular", QVector3D(1.0f, 1.0f, 1.0f));
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
