@@ -6,7 +6,7 @@
 static QOpenGLTexture *TextureFromFile(const char *path, const QString &directory);
 
 Model::Model(QOpenGLContext* context, QString path)
-	: QObject(context), QOpenGLExtraFunctions(context)
+	: Entity(context)
 {
 	loadModel(path);
 

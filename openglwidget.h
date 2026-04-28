@@ -10,6 +10,7 @@
 #include <QVector3D>
 #include <QOpenGLBuffer>
 #include <QOpenGLFramebufferObject>
+#include "entity.h"
 #include "model.h"
 #include "camera.h"
 
@@ -49,7 +50,7 @@ private:
 	float MouseSensitivity;
 	float Zoom;
 	Camera camera;
-	Model *model;
+	QVector<Entity*> entities;
 	QAtomicInteger<bool> windowResized;
 	GLuint fbo;
 	GLuint depthfbo;

@@ -102,7 +102,9 @@ OpenGLWidget::OpenGLWidget(QWidget *parent): QOpenGLWidget(parent),
 
 OpenGLWidget::~OpenGLWidget()
 {
-	delete model;
+	for (Entity* entity: entities) {
+		delete entity;
+	}
 	glDeleteFramebuffers(1, &fbo);
 }
 
@@ -322,7 +324,7 @@ void OpenGLWidget::initalizeMesh()
 	assert(mesh_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "model.fs"));
 	mesh_shader->link();
 
-	model = new Model(context(), "backpack/backpack.obj");
+	entities.push_back(new Model(context(), "backpack/backpack.obj"));
 }
 
 void OpenGLWidget::meshPass()
@@ -334,7 +336,9 @@ void OpenGLWidget::meshPass()
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	model->draw(mesh_shader);
+	for (Entity* entity: entities) {
+		entity->draw(mesh_shader);
+	}
 }
 
 void OpenGLWidget::skyboxPass()
