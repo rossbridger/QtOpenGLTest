@@ -330,13 +330,25 @@ void OpenGLWidget::initializePostProcessing()
 
 void OpenGLWidget::initalizeMesh()
 {
+	glGenTextures(1, &brdfTexture);
+	glBindTexture(GL_TEXTURE_2D, brdfTexture);
+
+	QString filename = "ibl_brdf_lut.png";
+	QImage image(filename);
+	image.convertTo(QImage::Format_RGB888);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.bits());
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	mesh_shader = new QOpenGLShaderProgram(context());
 	assert(mesh_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "model.vs"));
 	assert(mesh_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "model.fs"));
 	mesh_shader->link();
 
 	entities.push_back(new Model(context(), "backpack/backpack.obj"));
-	entities.push_back(new Terrain(context(), "iceland_heightmap.png"));
+	//entities.push_back(new Terrain(context(), "iceland_heightmap.png"));
 }
 
 void OpenGLWidget::meshPass()
@@ -365,6 +377,13 @@ void OpenGLWidget::meshPass()
 	mesh_shader->setUniformValue("spotLight.outerCutOff", qCos(qDegreesToRadians(17.5f)));
 	mesh_shader->setUniformValue("spotLight.color", QVector3D(0.2f, 0.2f, 0.2f));
 
+	glActiveTexture(GL_TEXTURE30);
+	glBindTexture(GL_TEXTURE_2D, brdfTexture);
+	mesh_shader->setUniformValue("BRDFIntegrationMap", 30);
+	// bind cube map as environment map
+	glActiveTexture(GL_TEXTURE31);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
+	mesh_shader->setUniformValue("environmentMap", 31);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -420,7 +439,6 @@ void OpenGLWidget::loadCubemap(const std::array<const char*, 6>& faces)
 	{
 		QString filename = faces[i];
 		QImage image(filename);
-		qDebug() << "image " << i << ": " << image.width() << "x" << image.height() << ", format = " << image.format();
 		image.convertTo(QImage::Format_RGB888);
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, image.width(), image.height(),
 			     0, GL_RGB, GL_UNSIGNED_BYTE, image.bits());
@@ -430,4 +448,5 @@ void OpenGLWidget::loadCubemap(const std::array<const char*, 6>& faces)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 }

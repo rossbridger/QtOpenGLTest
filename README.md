@@ -9,5 +9,7 @@ Implemented features:
  - Saving screenshots
  - Loading model via assimp
  - Skybox
+ - Environment Mapping
+ - Cook-Torrence BRDF 
 
 ![Screenshot](output.png)

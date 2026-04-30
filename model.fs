@@ -11,6 +11,9 @@ uniform sampler2D texture_normal1;
 uniform sampler2D texture_metallic1;
 uniform sampler2D texture_ao1;
 
+uniform sampler2D BRDFIntegrationMap;
+uniform samplerCube environmentMap;
+
 struct DirLight {
     vec3 direction;
     vec3 color;
@@ -75,6 +78,11 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     float ggx1  = GeometrySchlickGGX(NdotL, roughness);
 
     return ggx1 * ggx2;
+}
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 vec3 CookTorrenceBrdf(vec3 N, vec3 L, vec3 V, vec3 F0, vec3 albedo, vec3 radiance, float roughness, float metallic)
@@ -165,7 +173,14 @@ void main()
     // phase 3: Spot light
     Lo += CalcSpotLight(spotLight, normal, FragPos, viewDir, F0, albedo, roughness, metallic);
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 R = reflect(-viewDir, normal);
+    vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0), F0, roughness);
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(environmentMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 envBRDF  = texture(BRDFIntegrationMap, vec2(max(dot(normal, viewDir), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+    vec3 ambient = specular * ao;
+
     vec3 color = ambient + Lo;
 
     // Gamma correction

@@ -61,6 +61,7 @@ private:
 	GLuint screen_texture;
 	GLuint depth_texture;
 	GLuint cubeTexture;
+	GLuint brdfTexture;
 	float near_plane;
 	float far_plane;
 	float sun_azimuth;
