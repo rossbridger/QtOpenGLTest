@@ -132,17 +132,20 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 	// normal: texture_normalN
 
 	// 1. diffuse maps
-	QVector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-	textures.append(diffuseMaps);
+	QVector<Texture> albedoMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_albedo");
+	textures.append(albedoMaps);
 	// // 2. specular maps
-	QVector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-	textures.append(specularMaps);
+	QVector<Texture> roughnessMaps = loadMaterialTextures(material, aiTextureType_SHININESS, "texture_roughness");
+	textures.append(roughnessMaps);
 	// // 3. normal maps
 	QVector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
 	textures.append(normalMaps);
 	// // 4. height maps
-	QVector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
-	textures.append(heightMaps);
+	QVector<Texture> metallicMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_metallic");
+	textures.append(metallicMaps);
+	// // 5. ao maps
+	QVector<Texture> aoMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ao");
+	textures.append(aoMaps);
 
 	// return a mesh object created from the extracted mesh data
 	return Mesh(vertices, indices, textures);
@@ -214,22 +217,25 @@ void Model::setupMesh(Mesh& mesh)
 
 void Model::drawMesh(QOpenGLShaderProgram* shader, Mesh& mesh)
 {
-	unsigned int diffuseNr = 1;
-	unsigned int specularNr = 1;
+	unsigned int albedoNr = 1;
+	unsigned int roughnessNr = 1;
 	unsigned int normalNr = 1;
-	unsigned int heightNr = 1;
+	unsigned int metallicNr = 1;
+	unsigned int aoNr = 1;
 	for (unsigned int i = 0; i < mesh.textures.size(); i++) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		QString number;
 		QString name = mesh.textures[i].type;
-		if (name == "texture_diffuse") {
-			number = QString::number(diffuseNr++);
-		} else if(name == "texture_specular") {
-			number = QString::number(specularNr++);
+		if (name == "texture_albedo") {
+			number = QString::number(albedoNr++);
+		} else if(name == "texture_roughness") {
+			number = QString::number(roughnessNr++);
 		} else if(name == "texture_normal") {
 			number = QString::number(normalNr++);
-		} else if(name == "texture_height") {
-			number = QString::number(heightNr++);
+		} else if(name == "texture_metallic") {
+			number = QString::number(metallicNr++);
+		} else if(name == "texture_ao") {
+			number = QString::number(aoNr++);
 		}
 		shader->setUniformValue((name + number).toLocal8Bit().constData(), i);
 		if (mesh.textures[i].id) {

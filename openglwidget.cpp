@@ -346,9 +346,7 @@ void OpenGLWidget::meshPass()
 	mesh_shader->setUniformValue("view", camera.getViewMatrix());
 	mesh_shader->setUniformValue("viewPos", camera.getPosition());
 	mesh_shader->setUniformValue("dirLight.direction", QVector3D(-0.2f, -1.0f, -0.3f));
-	mesh_shader->setUniformValue("dirLight.ambient", QVector3D(0.2f, 0.2f, 0.2f));
-	mesh_shader->setUniformValue("dirLight.diffuse", QVector3D(0.5f, 0.5f, 0.5f)); // darken diffuse light a bit
-	mesh_shader->setUniformValue("dirLight.specular", QVector3D(1.0f, 1.0f, 1.0f));
+	mesh_shader->setUniformValue("dirLight.color", QVector3D(0.2f, 0.2f, 0.2f));
 	QVector3D pointLightPositions[] = {
 		QVector3D( 0.7f,  0.2f,  2.0f),
 		QVector3D( 2.3f, -3.3f, -4.0f),
@@ -358,24 +356,14 @@ void OpenGLWidget::meshPass()
 
 	for (int i = 0; i < 4; i++) {
 		mesh_shader->setUniformValue(QString("pointLights[%1].position").arg(i).toUtf8(), pointLightPositions[i]);
-		mesh_shader->setUniformValue(QString("pointLights[%1].constant").arg(i).toUtf8(), 1.0f);
-		mesh_shader->setUniformValue(QString("pointLights[%1].linear").arg(i).toUtf8(), 0.09f);
-		mesh_shader->setUniformValue(QString("pointLights[%1].quadratic").arg(i).toUtf8(), 0.032f);
-		mesh_shader->setUniformValue(QString("pointLights[%1].ambient").arg(i).toUtf8(), QVector3D(0.2f, 0.2f, 0.2f));
-		mesh_shader->setUniformValue(QString("pointLights[%1].diffuse").arg(i).toUtf8(), QVector3D(0.5f, 0.5f, 0.5f));
-		mesh_shader->setUniformValue(QString("pointLights[%1].specular").arg(i).toUtf8(), QVector3D(1.0f, 1.0f, 1.0f));
+		mesh_shader->setUniformValue(QString("pointLights[%1].color").arg(i).toUtf8(), QVector3D(0.2f, 0.2f, 0.2f));
 	}
 
 	mesh_shader->setUniformValue("spotLight.position", camera.getPosition());
 	mesh_shader->setUniformValue("spotLight.direction", Front);
 	mesh_shader->setUniformValue("spotLight.cutOff", qCos(qDegreesToRadians(12.5f)));
 	mesh_shader->setUniformValue("spotLight.outerCutOff", qCos(qDegreesToRadians(17.5f)));
-	mesh_shader->setUniformValue("spotLight.constant", 1.0f);
-	mesh_shader->setUniformValue("spotLight.linear", 0.09f);
-	mesh_shader->setUniformValue("spotLight.quadratic", 0.032f);
-	mesh_shader->setUniformValue("spotLight.ambient", QVector3D(0.2f, 0.2f, 0.2f));
-	mesh_shader->setUniformValue("spotLight.diffuse", QVector3D(0.5f, 0.5f, 0.5f));
-	mesh_shader->setUniformValue("spotLight.specular", QVector3D(1.0f, 1.0f, 1.0f));
+	mesh_shader->setUniformValue("spotLight.color", QVector3D(0.2f, 0.2f, 0.2f));
 
 
 	glEnable(GL_CULL_FACE);
